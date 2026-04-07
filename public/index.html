@@ -1,0 +1,5855 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Architect - AI 能力评估系统</title>
+
+    <!-- Tailwind CSS with Custom Config -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'bg': '#0b1326',
+                        'surface': '#171f33',
+                        'surface-high': '#222a3d',
+                        'primary': '#bac3ff',
+                        'primary-container': '#3050de',
+                        'secondary': '#5bd5fc',
+                        'tertiary': '#ffb1c6',
+                        'accent': '#3050de',
+                    },
+                    fontFamily: {
+                        'grotesk': ['Space Grotesk', 'sans-serif'],
+                        'sans': ['Noto Sans SC', 'sans-serif'],
+                    },
+                    backdropBlur: {
+                        'glass': '20px',
+                    },
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Material Symbols Outlined -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js" crossorigin="anonymous"></script>
+
+    <!-- html2canvas -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js" crossorigin="anonymous"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html, body {
+            width: 100%;
+            height: 100%;
+            background-color: #0b1326;
+            color: #ffffff;
+            font-family: 'Noto Sans SC', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Material Icons */
+        .material-symbols-outlined {
+            font-variation-settings:
+                'FILL' 0,
+                'wght' 400,
+                'GRAD' 0,
+                'opsz' 24;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Page Base Styles */
+        .page {
+            display: none;
+            flex-direction: column;
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+            animation: pageTransition 0.4s ease-in-out;
+        }
+
+        .page.active {
+            display: flex;
+        }
+
+        @keyframes pageTransition {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Glass Morphism */
+        .glass {
+            background: rgba(45, 52, 73, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(186, 195, 255, 0.15);
+        }
+
+        .glass-secondary {
+            background: rgba(45, 52, 73, 0.3);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(91, 213, 252, 0.15);
+        }
+
+        /* Glow Effects */
+        .glow-primary {
+            box-shadow: 0 0 30px rgba(186, 195, 255, 0.4), 0 0 60px rgba(186, 195, 255, 0.2);
+        }
+
+        .glow-secondary {
+            box-shadow: 0 0 30px rgba(91, 213, 252, 0.4), 0 0 60px rgba(91, 213, 252, 0.2);
+        }
+
+        .glow-tertiary {
+            box-shadow: 0 0 30px rgba(255, 177, 198, 0.4), 0 0 60px rgba(255, 177, 198, 0.2);
+        }
+
+        .glow-accent {
+            box-shadow: 0 0 40px rgba(48, 80, 222, 0.5);
+        }
+
+        /* Gradient Button */
+        .btn-gradient {
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+            color: #ffffff;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(48, 80, 222, 0.5);
+        }
+
+        .btn-gradient:active {
+            transform: translateY(0);
+        }
+
+        /* Outline Button */
+        .btn-outline {
+            background: transparent;
+            color: #bac3ff;
+            border: 2px solid #bac3ff;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .btn-outline:hover {
+            background: rgba(186, 195, 255, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Outline Button Secondary */
+        .btn-outline-secondary {
+            background: transparent;
+            color: #5bd5fc;
+            border: 2px solid #5bd5fc;
+            padding: 10px 22px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Space Grotesk', sans-serif;
+        }
+
+        .btn-outline-secondary:hover {
+            background: rgba(91, 213, 252, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* Scanning Line Animation */
+        @keyframes scanning {
+            0% {
+                transform: translateY(-100%);
+            }
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        .scanning-line {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, rgba(91, 213, 252, 0.8), transparent);
+            animation: scanning 2s infinite;
+        }
+
+        .progress-bar-scanning {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .progress-bar-scanning::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(91, 213, 252, 0.6), transparent);
+            animation: scanning 2s infinite;
+        }
+
+        /* Particle Animation */
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px) translateX(0px);
+                opacity: 0.3;
+            }
+            50% {
+                transform: translateY(-20px) translateX(10px);
+                opacity: 0.6;
+            }
+        }
+
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: rgba(91, 213, 252, 0.6);
+            border-radius: 50%;
+            animation: float 4s infinite ease-in-out;
+        }
+
+        /* Progress Bar */
+        .progress-track {
+            background: rgba(45, 52, 73, 0.6);
+            border-radius: 20px;
+            overflow: hidden;
+            height: 8px;
+            position: relative;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #3050de, #5bd5fc);
+            height: 100%;
+            border-radius: 20px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.5), transparent);
+            animation: scanning 1.5s infinite;
+        }
+
+        /* Badges */
+        .badge-warning {
+            background: linear-gradient(135deg, rgba(255, 177, 198, 0.2), rgba(48, 80, 222, 0.2));
+            border: 1px solid rgba(255, 177, 198, 0.5);
+            color: #ffb1c6;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge-success {
+            background: rgba(91, 213, 252, 0.2);
+            border: 1px solid rgba(91, 213, 252, 0.5);
+            color: #5bd5fc;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-premium {
+            background: linear-gradient(135deg, #3050de, #5bd5fc);
+            color: #ffffff;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+            background: rgba(23, 31, 51, 0.5);
+            border-bottom: 1px solid rgba(186, 195, 255, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1rem;
+            letter-spacing: 0.05em;
+        }
+
+        .header-logo .icon {
+            font-size: 1.5rem;
+            color: #bac3ff;
+        }
+
+        .back-btn {
+            background: transparent;
+            border: none;
+            color: #bac3ff;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(186, 195, 255, 0.1);
+        }
+
+        /* ===== PAGE 1: LANDING ===== */
+        #page-landing {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+        }
+
+        .landing-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: relative;
+            z-index: 10;
+        }
+
+        .landing-logo {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 0.05em;
+        }
+
+        .landing-logo .icon {
+            font-size: 1.2rem;
+            color: #bac3ff;
+        }
+
+        .landing-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            gap: 24px;
+            position: relative;
+            z-index: 5;
+        }
+
+        .landing-warning {
+            background: linear-gradient(135deg, rgba(255, 177, 198, 0.2), rgba(48, 80, 222, 0.2));
+
+            border: 1px solid rgba(255, 177, 198, 0.5);
+
+            color: #ffb1c6;
+
+            padding: 6px 12px;
+
+            border-radius: 20px;
+
+            font-size: 0.75rem;
+
+            font-weight: 600;
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 6px;
+        }
+
+        .landing-headline {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            color: #ffffff;
+            letter-spacing: -0.02em;
+        }
+
+        .landing-hero-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .hero-stat {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            color: #5bd5fc;
+            line-height: 1;
+        }
+
+        .hero-stat-label {
+            font-size: 0.875rem;
+            color: #bac3ff;
+            margin-top: 4px;
+        }
+
+        .threat-meter {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .threat-label {
+            font-size: 0.75rem;
+            color: #bac3ff;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+
+        .threat-level {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #ffb1c6;
+        }
+
+        .threat-bar {
+            background: rgba(45, 52, 73, 0.6);
+
+            border-radius: 20px;
+
+            overflow: hidden;
+
+            height: 8px;
+
+            position: relative;
+            height: 6px;
+        }
+
+        .threat-bar-fill {
+            background: linear-gradient(90deg, #ffb1c6, #ff6b8a);
+            height: 100%;
+            width: 65%;
+        }
+
+        .feature-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+
+        @media (min-width: 640px) {
+            .feature-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        .feature-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 8px;
+        }
+
+        .feature-icon {
+            font-size: 2rem;
+            color: #5bd5fc;
+        }
+
+        .feature-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #bac3ff;
+        }
+
+        .feature-desc {
+            font-size: 0.75rem;
+            color: rgba(186, 195, 255, 0.6);
+            line-height: 1.4;
+        }
+
+        .landing-footer {
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            position: sticky;
+            bottom: 0;
+            background: linear-gradient(180deg, transparent, rgba(11, 19, 38, 0.8));
+            z-index: 20;
+        }
+
+        .landing-cta {
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+
+            color: #ffffff;
+
+            border: none;
+
+            padding: 12px 24px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100%;
+            max-width: 300px;
+            padding: 14px 28px;
+            font-size: 1rem;
+        }
+
+        /* ===== PAGE 2: VERSION SELECT ===== */
+        #page-select {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+        }
+
+        .select-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .select-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 12px;
+        }
+
+        .version-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 16px;
+        }
+
+        @media (min-width: 640px) {
+            .version-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        .version-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+        }
+
+        .version-card.premium {
+            border: 2px solid;
+            border-image: linear-gradient(135deg, #3050de, #5bd5fc) 1;
+        }
+
+        .version-badge {
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .version-badge .badge-premium {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+        }
+
+        .version-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #bac3ff;
+        }
+
+        .version-detail {
+            font-size: 0.9rem;
+            color: #5bd5fc;
+            font-weight: 600;
+            margin: 4px 0;
+        }
+
+        .version-desc {
+            font-size: 0.85rem;
+            color: rgba(186, 195, 255, 0.6);
+            line-height: 1.5;
+            flex: 1;
+        }
+
+        .version-btn {
+            margin-top: 8px;
+        }
+
+        .social-proof {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar-stack {
+            display: flex;
+            margin-right: auto;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #171f33;
+            margin-left: -8px;
+            background: linear-gradient(135deg, #3050de, #5bd5fc);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            color: #ffffff;
+            font-weight: 700;
+        }
+
+        .social-text {
+            font-size: 0.85rem;
+            color: rgba(186, 195, 255, 0.7);
+        }
+
+        .security-badge {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 14px 16px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.85rem;
+            color: #bac3ff;
+        }
+
+        .security-badge .icon {
+            font-size: 1.2rem;
+            color: #5bd5fc;
+        }
+
+        /* ===== PAGE 3: CODE VERIFICATION ===== */
+        #page-code {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+        }
+
+        .code-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            overflow-y: auto;
+        }
+
+        .code-lock-badge {
+            background: linear-gradient(135deg, rgba(255, 177, 198, 0.2), rgba(48, 80, 222, 0.2));
+
+            border: 1px solid rgba(255, 177, 198, 0.5);
+
+            color: #ffb1c6;
+
+            padding: 6px 12px;
+
+            border-radius: 20px;
+
+            font-size: 0.75rem;
+
+            font-weight: 600;
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 6px;
+            width: fit-content;
+            margin-top: 12px;
+        }
+
+        .code-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 8px;
+        }
+
+        .code-input-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .code-input {
+            background: rgba(45, 52, 73, 0.6);
+            border: 2px solid rgba(91, 213, 252, 0.3);
+            color: #bac3ff;
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-family: 'Space Grotesk', monospace;
+            font-size: 1rem;
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .code-input::placeholder {
+            color: rgba(186, 195, 255, 0.3);
+        }
+
+        .code-input:focus {
+            outline: none;
+            border-color: #5bd5fc;
+            background: rgba(45, 52, 73, 0.8);
+            box-shadow: 0 0 20px rgba(91, 213, 252, 0.3);
+        }
+
+        .code-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .code-buttons .btn-gradient {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .code-buttons .btn-outline {
+            flex: 1;
+            min-width: 140px;
+        }
+
+        .feedback-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            display: none;
+        }
+
+        .feedback-card.success {
+            border-color: rgba(91, 213, 252, 0.3);
+            display: flex;
+        }
+
+        .feedback-card.error {
+            border-color: rgba(255, 177, 198, 0.3);
+            display: flex;
+        }
+
+        .feedback-icon {
+            font-size: 1.5rem;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .feedback-card.success .feedback-icon {
+            color: #5bd5fc;
+        }
+
+        .feedback-card.error .feedback-icon {
+            color: #ffb1c6;
+        }
+
+        .feedback-content {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .feedback-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .feedback-card.success .feedback-title {
+            color: #5bd5fc;
+        }
+
+        .feedback-card.error .feedback-title {
+            color: #ffb1c6;
+        }
+
+        .feedback-desc {
+            font-size: 0.85rem;
+            color: rgba(186, 195, 255, 0.6);
+        }
+
+        .scanning-decoration {
+            position: absolute;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #5bd5fc, transparent);
+            opacity: 0.3;
+        }
+
+        .scanning-decoration:nth-child(1) {
+            top: 30%;
+            animation: scanning 3s infinite;
+        }
+
+        .scanning-decoration:nth-child(2) {
+            bottom: 30%;
+            animation: scanning 3s infinite reverse;
+        }
+
+        /* ===== PAGE 4: QUIZ ===== */
+        #page-quiz {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .quiz-glow-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.1;
+            pointer-events: none;
+        }
+
+        .quiz-glow-orb:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            background: #3050de;
+            top: -100px;
+            right: -100px;
+        }
+
+        .quiz-glow-orb:nth-child(2) {
+            width: 250px;
+            height: 250px;
+            background: #5bd5fc;
+            bottom: 100px;
+            left: -80px;
+        }
+
+        .quiz-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+            position: relative;
+            z-index: 5;
+            overflow-y: auto;
+        }
+
+        .quiz-progress-section {
+            padding: 16px 20px;
+            border-bottom: 1px solid rgba(186, 195, 255, 0.1);
+            background: rgba(23, 31, 51, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .quiz-dimension {
+            font-size: 0.75rem;
+            color: #5bd5fc;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .quiz-counter {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #bac3ff;
+            margin-bottom: 12px;
+        }
+
+        .quiz-time {
+            font-size: 0.75rem;
+            color: rgba(186, 195, 255, 0.5);
+            margin-bottom: 12px;
+        }
+
+        .quiz-progress-bar {
+            background: rgba(45, 52, 73, 0.6);
+
+            border-radius: 20px;
+
+            overflow: hidden;
+
+            height: 8px;
+
+            position: relative;
+            height: 6px;
+        }
+
+        .quiz-progress-fill {
+            background: linear-gradient(90deg, #3050de, #5bd5fc);
+            height: 100%;
+            width: 30%;
+            position: relative;
+
+            overflow: hidden;
+        }
+
+        .quiz-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .question-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 24px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .question-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #ffffff;
+            line-height: 1.4;
+        }
+
+        /* ===== SCALE QUESTION (1-5) ===== */
+        .scale-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .scale-labels {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 4px;
+        }
+        .scale-label {
+            font-size: 0.65rem;
+            color: rgba(199,196,216,0.6);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+        }
+        .scale-options {
+            display: flex;
+            gap: 10px;
+        }
+        .scale-btn {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 72px;
+            background: rgba(45, 52, 73, 0.6);
+            border: 2px solid rgba(186, 195, 255, 0.15);
+            color: rgba(199,196,216,0.8);
+            border-radius: 12px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .scale-btn:hover {
+            border-color: rgba(91, 213, 252, 0.5);
+            background: rgba(91, 213, 252, 0.08);
+            color: #5bd5fc;
+            transform: scale(1.05);
+        }
+        .scale-btn.selected {
+            background: rgba(48, 80, 222, 0.25);
+            border-color: #5bd5fc;
+            color: #ffffff;
+            box-shadow: 0 0 20px rgba(91, 213, 252, 0.3);
+            transform: scale(1.08);
+        }
+
+        /* ===== CHOICE / SCENARIO OPTION CARDS ===== */
+        .option-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            padding: 18px;
+            background: rgba(34, 42, 61, 0.5);
+            border: 1.5px solid rgba(255,255,255,0.08);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 12px;
+        }
+        .option-card:last-child {
+            margin-bottom: 0;
+        }
+        .option-card:hover {
+            border-color: rgba(91, 213, 252, 0.4);
+            background: rgba(48, 80, 222, 0.08);
+        }
+        .option-card.selected {
+            background: rgba(48, 80, 222, 0.2);
+            border-color: #5bd5fc;
+            box-shadow: 0 0 15px rgba(91, 213, 252, 0.15);
+        }
+        .option-checkbox {
+            width: 22px;
+            height: 22px;
+            min-width: 22px;
+            border-radius: 6px;
+            border: 2px solid rgba(145,143,161,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            margin-top: 1px;
+        }
+        .option-card:hover .option-checkbox {
+            border-color: #5bd5fc;
+        }
+        .option-card.selected .option-checkbox {
+            border-color: #5bd5fc;
+            background: rgba(91,213,252,0.15);
+        }
+        .option-check-inner {
+            width: 10px;
+            height: 10px;
+            border-radius: 3px;
+            background: #5bd5fc;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .option-card.selected .option-check-inner {
+            opacity: 1;
+        }
+        .option-text-wrapper {
+            flex: 1;
+        }
+        .option-title {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #ffffff;
+            margin-bottom: 4px;
+            transition: color 0.3s ease;
+        }
+        .option-card:hover .option-title {
+            color: #5bd5fc;
+        }
+        .option-card.selected .option-title {
+            color: #5bd5fc;
+        }
+        .option-desc {
+            font-size: 0.78rem;
+            color: rgba(199,196,216,0.7);
+            line-height: 1.5;
+        }
+
+        .choice-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .choice-btn {
+            padding: 16px 12px;
+            background: rgba(45, 52, 73, 0.6);
+            border: 2px solid rgba(186, 195, 255, 0.2);
+            color: #bac3ff;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+            text-align: left;
+            position: relative;
+        }
+
+        .choice-btn::before {
+            content: '';
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(186, 195, 255, 0.4);
+            border-radius: 4px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            transition: all 0.3s ease;
+        }
+
+        .choice-btn:hover {
+            border-color: #5bd5fc;
+            background: rgba(91, 213, 252, 0.1);
+        }
+
+        .choice-btn.active {
+            border-color: #5bd5fc;
+            background: rgba(91, 213, 252, 0.2);
+        }
+
+        .choice-btn.active::before {
+            background: #5bd5fc;
+            border-color: #5bd5fc;
+        }
+
+        .quiz-footer {
+            padding: 16px 20px;
+            border-top: 1px solid rgba(186, 195, 255, 0.1);
+            background: rgba(23, 31, 51, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            position: sticky;
+            bottom: 0;
+            z-index: 10;
+        }
+
+        .quiz-prev-btn {
+            background: transparent;
+
+            color: #bac3ff;
+
+            border: 2px solid #bac3ff;
+
+            padding: 10px 22px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            flex: 0 1 auto;
+            min-width: 100px;
+        }
+
+        .quiz-skip-text {
+            color: rgba(186, 195, 255, 0.5);
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .quiz-skip-text:hover {
+            color: #bac3ff;
+        }
+
+        .quiz-next-wrapper {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex: 1;
+            justify-content: flex-end;
+        }
+
+        .quiz-next-btn {
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+
+            color: #ffffff;
+
+            border: none;
+
+            padding: 12px 24px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 10px 20px;
+            font-size: 0.9rem;
+            min-width: 140px;
+        }
+
+        /* ===== PAGE 5: ANALYZING ===== */
+        #page-analyzing {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .analyzing-grid {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image:
+                radial-gradient(circle, rgba(91, 213, 252, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        .analyzing-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            position: relative;
+            z-index: 5;
+            gap: 30px;
+            text-align: center;
+        }
+
+        .analyzing-counter {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 4rem;
+            font-weight: 700;
+            color: #5bd5fc;
+            line-height: 1;
+            box-shadow: 0 0 30px rgba(91, 213, 252, 0.4), 0 0 60px rgba(91, 213, 252, 0.2);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .analyzing-counter-unit {
+            font-size: 1.5rem;
+            color: #bac3ff;
+            margin-left: 4px;
+        }
+
+        .analyzing-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #ffffff;
+            max-width: 300px;
+        }
+
+        .analyzing-status-list {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 0.9rem;
+        }
+
+        .status-icon {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+
+        .status-icon.pending {
+            background: rgba(186, 195, 255, 0.2);
+            border: 1px solid rgba(186, 195, 255, 0.4);
+            color: #bac3ff;
+        }
+
+        .status-icon.active {
+            background: linear-gradient(135deg, #3050de, #5bd5fc);
+            color: #ffffff;
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-icon.complete {
+            background: #5bd5fc;
+            color: #0b1326;
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .status-text {
+            color: #bac3ff;
+            flex: 1;
+        }
+
+        .analyzing-progress-bar {
+            background: rgba(45, 52, 73, 0.6);
+
+            border-radius: 20px;
+
+            overflow: hidden;
+
+            height: 8px;
+
+            position: relative;
+            width: 100%;
+            max-width: 300px;
+            height: 6px;
+        }
+
+        .analyzing-progress-fill {
+            background: linear-gradient(90deg, #3050de, #5bd5fc);
+            height: 100%;
+            width: 75%;
+        }
+
+        .analyzing-metadata {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            color: rgba(186, 195, 255, 0.6);
+            font-family: 'Space Grotesk', monospace;
+        }
+
+        .analyzing-chart-container {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 300px;
+            height: 200px;
+        }
+
+        .analyzing-particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .analyzing-corner {
+            position: absolute;
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            color: #5bd5fc;
+            z-index: 5;
+        }
+
+        .analyzing-corner.top-left {
+            top: 40px;
+            left: 20px;
+        }
+
+        .analyzing-corner.bottom-right {
+            bottom: 40px;
+            right: 20px;
+        }
+
+        .analyzing-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        .scanning-overlay {
+            animation: scanning 3s infinite;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(91, 213, 252, 0.5), transparent);
+        }
+
+        /* ===== PAGE 6: REPORT ===== */
+        #page-report {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+        }
+
+        .report-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .report-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 12px;
+        }
+
+        .report-grade {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 5rem;
+            font-weight: 700;
+            color: #5bd5fc;
+            line-height: 1;
+            box-shadow: 0 0 30px rgba(91, 213, 252, 0.4), 0 0 60px rgba(91, 213, 252, 0.2);
+            padding: 20px;
+            border-radius: 16px;
+        }
+
+        .report-tagline {
+            font-size: 1rem;
+            color: #bac3ff;
+            max-width: 300px;
+        }
+
+        .report-bento {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .report-bento {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .report-chart-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            position: relative;
+            min-height: 300px;
+        }
+
+        .report-radar-container {
+            position: relative;
+            width: 100%;
+            height: 250px;
+        }
+
+        .report-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .report-risk-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .report-gauge-container {
+            position: relative;
+            width: 100%;
+            height: 150px;
+        }
+
+        .report-share-btn {
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+
+            color: #ffffff;
+
+            border: none;
+
+            padding: 12px 24px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 0.9rem;
+        }
+
+        .dimension-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .dimension-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #bac3ff;
+            margin-bottom: 8px;
+        }
+
+        .dimension-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .dimension-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .dimension-name {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #ffffff;
+        }
+
+        .dimension-score {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5bd5fc;
+        }
+
+        /* Dynamic dimension bar item (rendered by JS) */
+        .dim-bar-item {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(23, 31, 51, 0.6);
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .dim-bar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .dim-bar-name {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .dim-bar-score-num {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 800;
+            font-style: italic;
+        }
+        .dim-bar-score-max {
+            font-size: 0.8rem;
+            font-weight: 400;
+            opacity: 0.4;
+            font-style: normal;
+        }
+        .dim-bar-track {
+            position: relative;
+            height: 48px;
+            background: rgba(6,14,32,0.8);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.05);
+            margin-bottom: 8px;
+        }
+        .dim-bar-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            border-radius: 10px;
+            transition: width 1s ease;
+        }
+        .dim-bar-threshold {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 3px;
+            background: #ffb4ab;
+            box-shadow: 0 0 10px rgba(255,180,171,0.5);
+            z-index: 2;
+        }
+        .dim-bar-status {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.15em;
+            padding: 3px 8px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .dim-bar-status.safe {
+            color: #5bd5fc;
+            background: rgba(91,213,252,0.1);
+        }
+        .dim-bar-status.warning {
+            color: #ffb4ab;
+            background: rgba(255,180,171,0.1);
+        }
+        .dim-bar-status.danger {
+            color: #ffb1c6;
+            background: rgba(255,177,198,0.15);
+            animation: pulse 2s infinite;
+        }
+
+        .dimension-bar {
+            position: relative;
+            height: 4px;
+            background: rgba(45,52,73,0.6);
+            border-radius: 20px;
+        }
+
+        .dimension-bar-fill {
+            background: linear-gradient(90deg, #3050de, #5bd5fc);
+            height: 100%;
+            border-radius: 20px;
+            position: relative;
+        }
+
+        .dimension-threshold {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: #ffb1c6;
+            opacity: 0.5;
+        }
+
+        .dimension-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .dimension-status.safe {
+            color: #5bd5fc;
+        }
+
+        .dimension-status.warning {
+            color: #ffb1c6;
+        }
+
+        .insights-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .insights-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #bac3ff;
+            margin-bottom: 4px;
+        }
+
+        /* Interpretation cards (rendered by JS) */
+        .interpretation-section {
+            background: rgba(23, 31, 51, 0.5);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 12px;
+        }
+        .interpretation-section h4 {
+            font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #5bd5fc;
+            margin-bottom: 8px;
+        }
+        .interpretation-section p {
+            font-size: 0.85rem;
+            color: rgba(218,226,253,0.85);
+            line-height: 1.7;
+        }
+
+        /* Action items (rendered by JS) */
+        .action-item {
+            background: rgba(23, 31, 51, 0.5);
+            border-left: 3px solid #5bd5fc;
+            border-radius: 0 12px 12px 0;
+            padding: 14px 18px;
+            margin-bottom: 10px;
+            font-size: 0.85rem;
+            color: rgba(218,226,253,0.85);
+            line-height: 1.6;
+        }
+
+        .insight-card {
+            background: rgba(45, 52, 73, 0.4);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.08);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .insight-card:hover {
+            background: rgba(45, 52, 73, 0.6);
+        }
+
+        .insight-icon {
+            font-size: 1.5rem;
+            color: #5bd5fc;
+            flex-shrink: 0;
+        }
+
+        .insight-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .insight-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #ffffff;
+        }
+
+        .insight-preview {
+            font-size: 0.85rem;
+            color: rgba(186, 195, 255, 0.6);
+        }
+
+        .roadmap-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .roadmap-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #bac3ff;
+        }
+
+        .roadmap-timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 16px 0;
+        }
+
+        .roadmap-item {
+            display: flex;
+            gap: 16px;
+            position: relative;
+        }
+
+        .roadmap-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 24px;
+            top: 50px;
+            width: 2px;
+            height: 40px;
+            background: linear-gradient(180deg, #3050de, transparent);
+        }
+
+        .roadmap-dot {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #3050de, #5bd5fc);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 700;
+            flex-shrink: 0;
+            box-shadow: 0 0 30px rgba(91, 213, 252, 0.4), 0 0 60px rgba(91, 213, 252, 0.2);
+        }
+
+        .roadmap-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            justify-content: center;
+        }
+
+        .roadmap-phase {
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: #ffffff;
+        }
+
+        .roadmap-desc {
+            font-size: 0.85rem;
+            color: rgba(186, 195, 255, 0.6);
+        }
+
+        .report-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-top: 24px;
+            padding-bottom: 40px;
+        }
+        .report-action-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 16px 28px;
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'Noto Sans SC', sans-serif;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 20px rgba(48, 80, 222, 0.3);
+        }
+        .report-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(48, 80, 222, 0.5);
+        }
+        .report-action-btn .material-symbols-outlined {
+            font-size: 1.3rem;
+        }
+        .report-action-btn-outline {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 14px 28px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: 'Noto Sans SC', sans-serif;
+            border: 2px solid rgba(186, 195, 255, 0.25);
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: transparent;
+            color: #bac3ff;
+        }
+        .report-action-btn-outline:hover {
+            background: rgba(186, 195, 255, 0.08);
+            border-color: rgba(186, 195, 255, 0.4);
+        }
+        .report-action-btn-outline .material-symbols-outlined {
+            font-size: 1.2rem;
+        }
+
+        /* ===== PAGE 7: SHARE ===== */
+        #page-share {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+        }
+
+        .share-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .share-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin-top: 12px;
+        }
+
+        .share-layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 16px;
+        }
+
+        @media (max-width: 640px) {
+            .share-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .share-preview-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .preview-grade {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #5bd5fc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(48, 80, 222, 0.3), rgba(91, 213, 252, 0.3));
+            border-radius: 12px;
+            box-shadow: 0 0 30px rgba(91, 213, 252, 0.4), 0 0 60px rgba(91, 213, 252, 0.2);
+        }
+
+        .preview-metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .preview-metric-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .preview-metric-label {
+            font-size: 0.85rem;
+            color: rgba(186, 195, 255, 0.6);
+            min-width: 80px;
+        }
+
+        .preview-metric-bar {
+            flex: 1;
+            height: 6px;
+            background: rgba(45, 52, 73, 0.6);
+
+            border-radius: 20px;
+
+            overflow: hidden;
+
+            height: 8px;
+
+            position: relative;
+        }
+
+        .preview-metric-bar-fill {
+            background: linear-gradient(90deg, #3050de, #5bd5fc);
+            height: 100%;
+            border-radius: 3px;
+            width: 75%;
+        }
+
+        .preview-qr {
+            width: 120px;
+            height: 120px;
+            background: rgba(91, 213, 252, 0.1);
+            border: 1px dashed rgba(91, 213, 252, 0.3);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(91, 213, 252, 0.4);
+            font-size: 3rem;
+        }
+
+        .share-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .share-save-btn {
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+
+            color: #ffffff;
+
+            border: none;
+
+            padding: 12px 24px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100%;
+            padding: 14px 16px;
+        }
+
+        .share-pdf-btn {
+            background: transparent;
+
+            color: #bac3ff;
+
+            border: 2px solid #bac3ff;
+
+            padding: 10px 22px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100%;
+            padding: 12px 16px;
+        }
+
+        .share-social {
+            display: flex;
+            gap: 10px;
+        }
+
+        .share-social-btn {
+            flex: 1;
+            background: transparent;
+
+            color: #5bd5fc;
+
+            border: 2px solid #5bd5fc;
+
+            padding: 10px 22px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 12px 8px;
+            font-size: 0.85rem;
+        }
+
+        .share-invite-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 14px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.85rem;
+        }
+
+        .invite-title {
+            color: #bac3ff;
+            font-weight: 600;
+        }
+
+        .invite-text {
+            color: rgba(186, 195, 255, 0.6);
+            font-size: 0.8rem;
+        }
+
+        .share-link-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .share-link-input {
+            flex: 1;
+            background: rgba(45, 52, 73, 0.6);
+            border: 1px solid rgba(186, 195, 255, 0.2);
+            color: #bac3ff;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .share-link-input::placeholder {
+            color: rgba(186, 195, 255, 0.3);
+        }
+
+        .share-copy-btn {
+            background: transparent;
+
+            color: #bac3ff;
+
+            border: 2px solid #bac3ff;
+
+            padding: 10px 22px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 10px 14px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+        }
+
+        /* ===== PAGE 8: ADMIN ===== */
+        #page-admin {
+            background: linear-gradient(135deg, #0b1326 0%, #171f33 100%);
+        }
+
+        .admin-content {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            overflow-y: auto;
+        }
+
+        .admin-login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(11, 19, 38, 0.95);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            backdrop-filter: blur(10px);
+        }
+
+        .admin-login-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 30px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .admin-login-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-align: center;
+        }
+
+        .admin-login-input {
+            background: rgba(45, 52, 73, 0.6);
+            border: 2px solid rgba(186, 195, 255, 0.2);
+            color: #bac3ff;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .admin-login-input:focus {
+            outline: none;
+            border-color: #5bd5fc;
+            background: rgba(45, 52, 73, 0.8);
+        }
+
+        .admin-login-btn {
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+
+            color: #ffffff;
+
+            border: none;
+
+            padding: 12px 24px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100%;
+        }
+
+        .admin-dashboard {
+            display: none;
+        }
+
+        .admin-dashboard.active {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        @media (min-width: 640px) {
+            .admin-stats {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .admin-stat-card {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: center;
+        }
+
+        .admin-stat-value {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #5bd5fc;
+        }
+
+        .admin-stat-label {
+            font-size: 0.8rem;
+            color: rgba(186, 195, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .admin-section {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .admin-section-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #bac3ff;
+        }
+
+        .admin-panel {
+            background: rgba(45, 52, 73, 0.4);
+
+            backdrop-filter: blur(20px);
+
+            border: 1px solid rgba(186, 195, 255, 0.15);
+            padding: 16px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .admin-input-group {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .admin-select {
+            background: rgba(45, 52, 73, 0.6);
+            border: 1px solid rgba(186, 195, 255, 0.2);
+            color: #bac3ff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .admin-input {
+            background: rgba(45, 52, 73, 0.6);
+            border: 1px solid rgba(186, 195, 255, 0.2);
+            color: #bac3ff;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            flex: 1;
+            min-width: 120px;
+        }
+
+        .admin-btn {
+            background: linear-gradient(135deg, #3050de 0%, #5bd5fc 100%);
+
+            color: #ffffff;
+
+            border: none;
+
+            padding: 12px 24px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            padding: 8px 16px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+        }
+
+        .admin-table {
+            overflow-x: auto;
+        }
+
+        .admin-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .admin-table th {
+            background: rgba(45, 52, 73, 0.6);
+            color: #bac3ff;
+            padding: 10px 8px;
+            text-align: left;
+            font-weight: 600;
+            border-bottom: 1px solid rgba(186, 195, 255, 0.1);
+        }
+
+        .admin-table td {
+            color: rgba(186, 195, 255, 0.8);
+            padding: 10px 8px;
+            border-bottom: 1px solid rgba(186, 195, 255, 0.05);
+        }
+
+        .admin-table tr:hover {
+            background: rgba(91, 213, 252, 0.05);
+        }
+
+        .admin-status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .admin-status-badge.unused {
+            background: rgba(91, 213, 252, 0.2);
+            color: #5bd5fc;
+        }
+
+        .admin-status-badge.used {
+            background: rgba(255, 177, 198, 0.2);
+            color: #ffb1c6;
+        }
+
+        .status-used, .status-expired, .status-active, .status-unused, .status-result {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .status-used {
+            background: rgba(255, 177, 198, 0.2);
+            color: #ffb1c6;
+        }
+        .status-expired {
+            background: rgba(255, 140, 140, 0.2);
+            color: #ff8c8c;
+        }
+        .status-active {
+            background: rgba(91, 252, 160, 0.2);
+            color: #5bfca0;
+        }
+        .status-unused {
+            background: rgba(91, 213, 252, 0.2);
+            color: #5bd5fc;
+        }
+        .status-result {
+            background: rgba(186, 195, 255, 0.15);
+            color: #bac3ff;
+        }
+        .session-countdown {
+            position: fixed;
+            top: 12px;
+            right: 12px;
+            background: rgba(11, 19, 38, 0.9);
+            border: 1px solid rgba(91, 213, 252, 0.3);
+            color: #5bd5fc;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        .copy-btn {
+            background: rgba(48, 80, 222, 0.3);
+            color: #bac3ff;
+            border: 1px solid rgba(186, 195, 255, 0.2);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .copy-btn:hover {
+            background: rgba(48, 80, 222, 0.5);
+        }
+        .code-cell {
+            font-family: 'Space Grotesk', monospace;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+        }
+
+        .admin-export-btn {
+            background: transparent;
+
+            color: #bac3ff;
+
+            border: 2px solid #bac3ff;
+
+            padding: 10px 22px;
+
+            border-radius: 8px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            transition: all 0.3s ease;
+
+            font-family: 'Space Grotesk', sans-serif;
+            width: 100%;
+            padding: 10px 16px;
+            margin-top: 8px;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 640px) {
+            .landing-headline {
+                font-size: 1.8rem;
+            }
+
+            .hero-stat {
+                font-size: 2.8rem;
+            }
+
+            .report-grade {
+                font-size: 3.5rem;
+            }
+
+            .analyzing-counter {
+                font-size: 3rem;
+            }
+
+            .select-title,
+            .code-title,
+            .share-title {
+                font-size: 1.4rem;
+            }
+
+            .quiz-footer {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .quiz-next-wrapper {
+                width: 100%;
+            }
+
+            .quiz-prev-btn {
+                width: 100%;
+            }
+
+            .quiz-next-btn {
+                width: 100%;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(91, 213, 252, 0.3);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(91, 213, 252, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <!-- Session countdown (shown when quiz is active) -->
+    <div class="session-countdown" style="display:none;"></div>
+
+    <!-- ===== PAGE 1: LANDING ===== -->
+    <div id="page-landing" class="page active">
+        <div class="landing-header">
+            <div class="landing-logo">
+                <span class="icon material-symbols-outlined">psychology</span>
+                <span>NEURAL ARCHITECT</span>
+            </div>
+        </div>
+
+        <div class="landing-content">
+            <div class="landing-warning badge-warning">
+                <span class="material-symbols-outlined" style="font-size: 0.875rem;">warning</span>
+                <span>紧急：检测到行业剧变</span>
+            </div>
+
+            <h1 class="landing-headline">人工智能会在3年内取代你的工作吗？</h1>
+
+            <div class="landing-hero-card">
+                <div>
+                    <div class="hero-stat">60%</div>
+                    <div class="hero-stat-label">行业风险等级</div>
+                </div>
+                <div class="threat-meter">
+                    <div class="threat-label">威胁水位</div>
+                    <div class="threat-level">高风险区间</div>
+                    <div class="threat-bar">
+                        <div class="threat-bar-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <span class="material-symbols-outlined feature-icon">school</span>
+                    <div class="feature-title">算法素养</div>
+                    <div class="feature-desc">理解AI如何运作</div>
+                </div>
+                <div class="feature-card">
+                    <span class="material-symbols-outlined feature-icon">integration_instructions</span>
+                    <div class="feature-title">混合智能</div>
+                    <div class="feature-desc">人机协作新姿态</div>
+                </div>
+                <div class="feature-card">
+                    <span class="material-symbols-outlined feature-icon">security</span>
+                    <div class="feature-title">后AI韧性</div>
+                    <div class="feature-desc">未来工作的底线</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="landing-footer">
+            <button class="landing-cta start-basic-btn btn-gradient">立即开始评估</button>
+        </div>
+    </div>
+
+    <!-- ===== PAGE 2: VERSION SELECT ===== -->
+    <div id="page-select" class="page">
+        <div class="header">
+            <button class="back-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="header-logo">
+                <span class="icon material-symbols-outlined">psychology</span>
+                <span style="letter-spacing: 0.05em;">NEURAL</span>
+            </div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="select-content">
+            <h2 class="select-title">选择您的智能深度</h2>
+
+            <div class="version-cards">
+                <div class="version-card">
+                    <div class="version-name">基础版</div>
+                    <div class="version-detail">BASIC</div>
+                    <div class="version-desc">48道测评题目，快速了解您的AI转型风险等级。适合初次评估。</div>
+                    <button class="btn-outline version-btn quiz-type-btn" data-type="basic" style="width: 100%;">开启基础测评</button>
+                </div>
+
+                <div class="version-card premium">
+                    <div class="version-badge">
+                        <span class="badge-premium">首选推荐</span>
+                    </div>
+                    <div class="version-name">进阶版</div>
+                    <div class="version-detail">ADVANCED</div>
+                    <div class="version-desc">100道深度测评，全维度解析您的神经竞争力。详细数据与进化建议。</div>
+                    <button class="btn-gradient version-btn quiz-type-btn" data-type="advanced" style="width: 100%;">开启进阶进化之旅</button>
+                </div>
+            </div>
+
+            <div class="social-proof">
+                <div class="avatar-stack">
+                    <div class="avatar">李</div>
+                    <div class="avatar">王</div>
+                    <div class="avatar">张</div>
+                    <div class="avatar">+</div>
+                </div>
+                <div class="social-text">本月已有超过<br>2,400+位架构师加入</div>
+            </div>
+
+            <div class="security-badge">
+                <span class="icon material-symbols-outlined">verified_user</span>
+                <span>经认证的数据隐私协议 2.0</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE 3: CODE VERIFICATION ===== -->
+    <div id="page-code" class="page">
+        <div class="header">
+            <button class="back-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="header-logo">
+                <span class="icon material-symbols-outlined">psychology</span>
+                <span style="letter-spacing: 0.05em;">NEURAL</span>
+            </div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="code-content">
+            <div class="code-lock-badge badge-warning">
+                <span class="material-symbols-outlined" style="font-size: 0.875rem;">lock</span>
+                <span>安全授权层</span>
+            </div>
+
+            <h2 class="code-title">兑换智能核心代码</h2>
+
+            <div class="code-input-wrapper">
+                <input type="text" class="code-input" placeholder="ARCH-XXXX-XXXX" maxlength="16">
+            </div>
+
+            <div class="code-buttons">
+                <button class="code-submit-btn btn-gradient">验证代码</button>
+                <button class="btn-outline">申请访问权限</button>
+            </div>
+
+            <div class="feedback-card success" style="display: none;">
+                <span class="material-symbols-outlined feedback-icon">verified_user</span>
+                <div class="feedback-content">
+                    <div class="feedback-title">系统就绪</div>
+                    <div class="feedback-desc">您的访问权限已激活，可以开始评估</div>
+                </div>
+            </div>
+
+            <div class="feedback-card error" style="display: none;">
+                <span class="material-symbols-outlined feedback-icon">gpp_maybe</span>
+                <div class="feedback-content">
+                    <div class="feedback-title">验证错误</div>
+                    <div class="feedback-desc">代码格式不正确或已过期，请检查重试</div>
+                </div>
+            </div>
+
+            <button class="quiz-start-btn btn-gradient" style="width: 100%; margin-top: 20px; display: none;">开始测评</button>
+
+            <div class="scanning-decoration" style="top: 35%;"></div>
+            <div class="scanning-decoration" style="bottom: 35%;"></div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE 4: QUIZ ===== -->
+    <div id="page-quiz" class="page">
+        <div class="quiz-glow-orb"></div>
+        <div class="quiz-glow-orb"></div>
+
+        <div class="header">
+            <button class="back-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="header-logo">
+                <span class="icon material-symbols-outlined">psychology</span>
+                <span style="letter-spacing: 0.05em;">NEURAL</span>
+            </div>
+            <div class="badge-success" style="font-size: 0.75rem; padding: 4px 10px;">进行中</div>
+        </div>
+
+        <div class="quiz-progress-section">
+            <div class="question-dimension">算法素养维度</div>
+            <div class="question-counter">第 1 题 / 共 48 题</div>
+            <div class="quiz-time">预计 8 分钟完成</div>
+            <div class="progress-bar progress-bar-scanning">
+                <div class="quiz-progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="quiz-container">
+            <div class="quiz-content">
+                <div class="question-card">
+                    <h3 class="question-text">您对当前人工智能技术的应用深度了解程度如何？</h3>
+                    <div class="question-options"></div>
+                </div>
+            </div>
+
+            <div class="quiz-footer">
+                <button class="quiz-prev-btn btn-outline">上一题</button>
+                <div class="quiz-skip-text">暂时跳过</div>
+                <div class="quiz-next-wrapper">
+                    <button class="quiz-next-btn btn-gradient">保存并下一题</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE 5: ANALYZING ===== -->
+    <div id="page-analyzing" class="page">
+        <div class="analyzing-grid"></div>
+
+        <div class="header" style="position: relative; z-index: 10;">
+            <div class="header-logo" style="justify-content: center; width: 100%;">
+                <span class="icon material-symbols-outlined">psychology</span>
+                <span style="letter-spacing: 0.05em;">NEURAL ARCHITECT</span>
+            </div>
+        </div>
+
+        <div class="analyzing-content">
+            <div class="analyzing-counter">
+                <span>42</span><span class="analyzing-counter-unit">%</span>
+            </div>
+
+            <h2 class="analyzing-title">正在构建您的神经胜任力地图</h2>
+
+            <div class="analyzing-steps">
+                <div class="status-item">
+                    <div class="status-icon active">
+                        <span class="material-symbols-outlined" style="font-size: 0.85rem; font-weight: 600;">done</span>
+                    </div>
+                    <span class="status-text">数据同步</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon active">
+                        <span class="material-symbols-outlined" style="font-size: 0.85rem;">auto_awesome</span>
+                    </div>
+                    <span class="status-text">智能分析</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon pending">
+                        <span class="material-symbols-outlined" style="font-size: 0.85rem;">pending</span>
+                    </div>
+                    <span class="status-text">报告生成</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-icon pending">
+                        <span class="material-symbols-outlined" style="font-size: 0.85rem;">pending</span>
+                    </div>
+                    <span class="status-text">执行摘要</span>
+                </div>
+            </div>
+
+            <div class="analyzing-progress progress-bar-scanning">
+                <div class="analyzing-progress-fill"></div>
+            </div>
+
+            <div class="analyzing-text" style="display: none;">正在处理中...</div>
+
+            <div class="analyzing-metadata">
+                entropy: 0x4f3e8c9d | processing: true
+            </div>
+
+            <div class="analyzing-chart-container">
+                <canvas id="analyzing-chart"></canvas>
+            </div>
+
+            <div class="analyzing-particles"></div>
+            <div class="analyzing-corner top-left">神经链路已建立</div>
+            <div class="analyzing-corner bottom-right">同步中...</div>
+        </div>
+
+        <div class="analyzing-overlay">
+            <div class="scanning-overlay"></div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE 6: REPORT ===== -->
+    <div id="page-report" class="page">
+        <div class="header">
+            <button class="back-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="header-logo">
+                <span class="icon material-symbols-outlined">psychology</span>
+                <span style="letter-spacing: 0.05em;">NEURAL</span>
+            </div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="report-content">
+            <div class="report-hero">
+                <div class="report-grade">A+</div>
+                <div class="report-tagline">您已获得后AI时代的核心竞争力</div>
+                <div class="report-headline" style="font-size: 1.5rem; font-weight: 700; color: #dae2fd; margin-top: 12px; line-height: 1.4;"></div>
+            </div>
+
+            <div class="report-bento">
+                <div class="report-chart-card">
+                    <div class="report-radar-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div style="display: none;">
+                        <div class="overall-score">86</div>
+                    </div>
+                </div>
+                <div class="report-sidebar">
+                    <div class="report-risk-card">
+                        <div style="font-size: 0.85rem; color: #bac3ff; margin-bottom: 8px;">
+                            风险评估: <span class="risk-score">14</span>
+                        </div>
+                        <div class="report-gauge-container">
+                            <canvas id="riskGauge"></canvas>
+                        </div>
+                    </div>
+                    <button class="report-share-btn btn-gradient">分享成果</button>
+                </div>
+            </div>
+
+            <!-- Dimension bars: fully rendered by JS -->
+            <div class="dimension-section">
+                <h3 class="dimension-title">六维竞争力指标</h3>
+                <div class="dimension-bars-container"></div>
+            </div>
+
+            <!-- Dynamic interpretations (rendered by JS) -->
+            <div class="insights-section">
+                <h3 class="insights-title">深层洞察</h3>
+                <div class="interpretations-container"></div>
+            </div>
+
+            <!-- Dynamic action items (rendered by JS) -->
+            <div class="insights-section">
+                <h3 class="insights-title" style="margin-top: 1.5rem;">行动清单</h3>
+                <div class="action-items-container"></div>
+            </div>
+
+            <div class="roadmap-section">
+                <h3 class="roadmap-title">进化路线图</h3>
+                <div class="roadmap-timeline">
+                    <div class="roadmap-item">
+                        <div class="roadmap-dot">1</div>
+                        <div class="roadmap-content">
+                            <div class="roadmap-phase">第一阶段：基础夯实（1-3个月）</div>
+                            <div class="roadmap-desc">强化AI基础理论，掌握主流框架</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-dot">2</div>
+                        <div class="roadmap-content">
+                            <div class="roadmap-phase">第二阶段：实战演练（4-6个月）</div>
+                            <div class="roadmap-desc">参与真实项目，积累工程经验</div>
+                        </div>
+                    </div>
+                    <div class="roadmap-item">
+                        <div class="roadmap-dot">3</div>
+                        <div class="roadmap-content">
+                            <div class="roadmap-phase">第三阶段：领导突破（6+个月）</div>
+                            <div class="roadmap-desc">建立行业影响力和领导力</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="report-actions">
+                <button class="download-report-btn report-action-btn">
+                    <span class="material-symbols-outlined">download</span>
+                    保存报告为图片
+                </button>
+                <button class="retake-quiz-btn report-action-btn-outline">
+                    <span class="material-symbols-outlined">refresh</span>
+                    重新测评
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE 7: SHARE ===== -->
+    <div id="page-share" class="page">
+        <div class="header">
+            <button class="back-btn">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </button>
+            <div class="header-logo">
+                <span class="icon material-symbols-outlined">psychology</span>
+                <span style="letter-spacing: 0.05em;">NEURAL</span>
+            </div>
+            <div style="width: 40px;"></div>
+        </div>
+
+        <div class="share-content">
+            <h2 class="share-title">分享你的神经遗产</h2>
+
+            <div class="share-layout">
+                <div class="share-preview-card">
+                    <div style="display: flex; gap: 16px;">
+                        <div class="preview-grade">A+</div>
+                        <div style="flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 8px;">
+                            <div style="font-size: 0.85rem; color: #bac3ff;">总体评分</div>
+                            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 1.2rem; font-weight: 700; color: #ffffff;">86/100</div>
+                        </div>
+                    </div>
+
+                    <div class="preview-metrics">
+                        <div class="preview-metric-row">
+                            <div class="preview-metric-label">算法素养</div>
+                            <div class="preview-metric-bar">
+                                <div class="preview-metric-bar-fill" style="width: 92%;"></div>
+                            </div>
+                        </div>
+                        <div class="preview-metric-row">
+                            <div class="preview-metric-label">混合智能</div>
+                            <div class="preview-metric-bar">
+                                <div class="preview-metric-bar-fill" style="width: 78%;"></div>
+                            </div>
+                        </div>
+                        <div class="preview-metric-row">
+                            <div class="preview-metric-label">后AI韧性</div>
+                            <div class="preview-metric-bar">
+                                <div class="preview-metric-bar-fill" style="width: 85%;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="preview-qr">
+                        <span class="material-symbols-outlined" style="font-size: 3rem;">qr_code_2</span>
+                    </div>
+                </div>
+
+                <div class="share-controls">
+                    <button class="share-save-btn btn-gradient">保存完整报告图片</button>
+                    <button class="share-pdf-btn btn-outline">下载执行版 PDF</button>
+
+                    <div class="share-social">
+                        <button class="share-social-btn btn-outline-secondary">分享至X</button>
+                        <button class="share-social-btn btn-outline-secondary">领英</button>
+                    </div>
+
+                    <div class="share-invite-card">
+                        <div class="invite-title">邀请更多人加入</div>
+                        <div class="invite-text">分享您的评估链接，一起迎接AI时代</div>
+                    </div>
+
+                    <div class="share-link-group">
+                        <input type="text" class="share-link-input" placeholder="https://ai-assess.com/share/u12345" readonly>
+                        <button class="share-copy-btn btn-outline">复制链接</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PAGE 8: ADMIN ===== -->
+    <div id="page-admin" class="page">
+        <div class="admin-login-section">
+            <div class="admin-login-overlay">
+                <div class="admin-login-card">
+                    <h2 class="admin-login-title">管理员登录</h2>
+                    <input type="password" class="admin-password-input" placeholder="输入管理员密码">
+                    <button class="admin-login-btn btn-gradient">登录</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-content-section" style="display: none;">
+            <div class="header">
+                <div class="header-logo" style="justify-content: center; width: 100%;">
+                    <span class="icon material-symbols-outlined">admin_panel_settings</span>
+                    <span>ADMIN DASHBOARD</span>
+                </div>
+            </div>
+
+            <div class="admin-content">
+                <div class="admin-dashboard">
+                <div class="admin-stats">
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value">2400</div>
+                        <div class="admin-stat-label">总兑换码</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value">1820</div>
+                        <div class="admin-stat-label">已使用</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value">580</div>
+                        <div class="admin-stat-label">未使用</div>
+                    </div>
+                    <div class="admin-stat-card">
+                        <div class="admin-stat-value">75.8%</div>
+                        <div class="admin-stat-label">使用率</div>
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <h3 class="admin-section-title">生成兑换码</h3>
+                    <div class="admin-panel">
+                        <div class="admin-input-group">
+                            <select class="code-type-select admin-select">
+                                <option value="basic">基础版 (48题)</option>
+                                <option value="advanced">进阶版 (100题)</option>
+                            </select>
+                            <input type="number" class="code-count-input admin-input" placeholder="批量数量 (1-100)" min="1" max="100">
+                            <button class="generate-codes-btn admin-btn btn-gradient">批量生成</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <h3 class="admin-section-title">兑换码管理</h3>
+                    <div class="admin-panel">
+                        <div class="admin-input-group">
+                            <select class="admin-select">
+                                <option>全部类型</option>
+                                <option>基础版</option>
+                                <option>进阶版</option>
+                            </select>
+                            <select class="admin-select">
+                                <option>全部状态</option>
+                                <option>未使用</option>
+                                <option>已使用</option>
+                            </select>
+                            <input type="text" class="admin-input" placeholder="搜索兑换码">
+                        </div>
+
+                        <div class="admin-table">
+                            <table class="admin-codes-table">
+                                <thead>
+                                    <tr>
+                                        <th>兑换码</th>
+                                        <th>类型</th>
+                                        <th>状态</th>
+                                        <th>创建时间</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button class="export-csv-btn admin-export-btn btn-outline">导出为 CSV</button>
+                    </div>
+                </div>
+
+                <div class="admin-section">
+                    <h3 class="admin-section-title">账户设置</h3>
+                    <div class="admin-panel">
+                        <div class="admin-input-group">
+                            <input type="password" class="admin-input" placeholder="当前密码" style="flex: 1;">
+                            <input type="password" class="admin-input" placeholder="新密码" style="flex: 1;">
+                            <button class="admin-btn btn-gradient">修改密码</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// ============================================================================
+// AI Career Assessment H5 Application - Complete JavaScript
+// ============================================================================
+
+// ============================================================================
+// 1. APP STATE MANAGEMENT
+// ============================================================================
+
+const App = {
+  currentPage: 'landing',
+  selectedVersion: null, // 'basic' or 'advanced'
+  currentCode: null,
+  answers: {}, // {questionId: {optionIndex, score, dim}}
+  currentQuestionIndex: 0,
+  questions: [], // filtered questions for current version
+  results: null,
+};
+
+// Dimension configuration
+const DIMENSIONS = {
+  tech: '技术敏锐度',
+  irreplace: '不可替代性',
+  adapt: '适应变革力',
+  cross: '跨界整合力',
+  emotion: '情绪与决策力',
+  growth: '成长型思维'
+};
+
+const DIM_COLORS = {
+  tech: '#5BD5FC',
+  irreplace: '#FF6B6B',
+  adapt: '#FFD93D',
+  cross: '#6BCB77',
+  emotion: '#FF8C42',
+  growth: '#A78BFA'
+};
+
+// ============================================================================
+// 2. ALL 100 QUESTIONS DATA (48 basic + 52 advanced)
+// ============================================================================
+
+const allQuestions = [
+  // ========== DIMENSION 1: TECH (技术敏锐度) - BASIC 8 ==========
+  {
+    id: 1,
+    dim: 'tech',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '在日常工作中，你对以下哪个AI工具的了解程度最深？',
+    options: [
+      { text: '都没有用过，不太了解', score: 1 },
+      { text: '有所耳闻，但没有深入使用过', score: 2 },
+      { text: '使用过其中几个，能基本操作', score: 4 },
+      { text: '多个工具都在用，理解其优劣差异', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 2,
+    dim: 'tech',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我能够理解大语言模型（LLM）的基本原理和工作方式。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 3,
+    dim: 'tech',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '关于提示词工程（Prompt Engineering），你的理解是：',
+    options: [
+      { text: '没听过这个概念', score: 1 },
+      { text: '听过但不清楚具体含义', score: 2 },
+      { text: '知道这是与AI交互的技巧', score: 4 },
+      { text: '能够用不同策略设计提示词来获得更好的结果', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 4,
+    dim: 'tech',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我每周都会主动使用AI工具来提升工作效率。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 5,
+    dim: 'tech',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '公司要求你在一个关键项目中应用AI工具。你会：',
+    options: [
+      { text: '认为风险太大，建议暂不使用', score: 1 },
+      { text: '让专业团队来处理AI相关部分', score: 2 },
+      { text: '自己学习并试用，找到合适的应用点', score: 3 },
+      { text: '快速评估多个AI工具，制定完整的应用方案', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 6,
+    dim: 'tech',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '对于AI工具的数据隐私和伦理问题，你的态度是：',
+    options: [
+      { text: '很少考虑这些问题', score: 1 },
+      { text: '知道有风险但没有深入了解', score: 2 },
+      { text: '会注意避免上传敏感信息', score: 4 },
+      { text: '深入理解风险，制定了使用规范', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 7,
+    dim: 'tech',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我能准确判断AI工具的能力边界，知道它们什么能做什么不能做。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 8,
+    dim: 'tech',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '你注意到一个AI工具在你的领域中可能带来革命性变化。你会：',
+    options: [
+      { text: '继续观望，等待市场验证', score: 1 },
+      { text: '了解一下，但不确定自己是否该立即行动', score: 2 },
+      { text: '主动学习这个工具，评估其对你工作的影响', score: 3 },
+      { text: '立即深入学习，制定适应策略，甚至探索新的业务机会', score: 5 }
+    ],
+    isAdvanced: false
+  },
+
+  // ========== DIMENSION 2: IRREPLACE (不可替代性) - BASIC 8 ==========
+  {
+    id: 9,
+    dim: 'irreplace',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '在你的工作中，创造性思维、创新能力占工作内容的比例大约是：',
+    options: [
+      { text: '很少，主要是执行性工作', score: 1 },
+      { text: '大约20-30%', score: 2 },
+      { text: '大约50%', score: 4 },
+      { text: '绝大部分工作都需要创意和创新', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 10,
+    dim: 'irreplace',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我与客户或利益相关者之间的关系和信任是我工作价值的核心。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 11,
+    dim: 'irreplace',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '面对模糊、不确定的问题时，你的能力表现是：',
+    options: [
+      { text: '容易感到困惑，需要清晰的指导', score: 1 },
+      { text: '能够处理，但会感到不适', score: 2 },
+      { text: '能够独立找到前进方向', score: 4 },
+      { text: '能够在不确定中发现机会，做出独特判断', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 12,
+    dim: 'irreplace',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我的工作经验和直觉在决策中起到重要作用，不能简单用规则替代。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 13,
+    dim: 'irreplace',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '一项标准化的工作流程可能被自动化取代。你会：',
+    options: [
+      { text: '感到担忧，但不知道怎么办', score: 1 },
+      { text: '重新思考你的核心价值，但还不清楚方向', score: 2 },
+      { text: '开始转向更需要人类判断的工作领域', score: 3 },
+      { text: '积极主导流程优化，发现新的价值创造点，强化自己的关键地位', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 14,
+    dim: 'irreplace',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '你在跨文化沟通和建立关系方面的能力：',
+    options: [
+      { text: '较弱，主要在本地或熟悉的环境工作', score: 1 },
+      { text: '一般，能完成基本沟通', score: 2 },
+      { text: '良好，能有效建立专业关系', score: 4 },
+      { text: '很强，能跨越文化差异建立深层次的信任和合作', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 15,
+    dim: 'irreplace',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '团队中的人把我看作是不可或缺的——因为我独特的能力或人格特质。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 16,
+    dim: 'irreplace',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '需要你现场做出复杂决定的情况在你工作中：',
+    options: [
+      { text: '很少发生，大部分决定都有规则可循', score: 1 },
+      { text: '偶尔发生', score: 2 },
+      { text: '经常发生，这是我工作的重要部分', score: 3 },
+      { text: '频繁发生，我的现场判断能力是我最大的价值', score: 5 }
+    ],
+    isAdvanced: false
+  },
+
+  // ========== DIMENSION 3: ADAPT (适应变革力) - BASIC 8 ==========
+  {
+    id: 17,
+    dim: 'adapt',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '面对新技术，你的学习速度通常是：',
+    options: [
+      { text: '需要较长时间才能理解和掌握', score: 1 },
+      { text: '中等速度', score: 2 },
+      { text: '较快，能快速上手', score: 4 },
+      { text: '很快，能迅速找到关键要点并实践', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 18,
+    dim: 'adapt',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我已经为职业转型或重大工作变化做好了心理准备。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 19,
+    dim: 'adapt',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '当面对不确定性时，你的态度是：',
+    options: [
+      { text: '感到很不适应，希望能有确定的答案', score: 1 },
+      { text: '有些不适但能接受', score: 2 },
+      { text: '能够接受，甚至感到有些兴奋', score: 4 },
+      { text: '完全接受，在变化中看到机会', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 20,
+    dim: 'adapt',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我在过去曾成功应对过重大的职业或生活变化。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 21,
+    dim: 'adapt',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当意识到行业可能即将发生大变化时，你会：',
+    options: [
+      { text: '等待事态更明确，再做反应', score: 1 },
+      { text: '开始关注相关动向，但仍主要专注当前工作', score: 2 },
+      { text: '主动学习新知识，评估自己的适应能力', score: 3 },
+      { text: '迅速制定主动适应计划，甚至提前调整职业方向', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 22,
+    dim: 'adapt',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '在高压、高风险的环境中，你的工作效率通常：',
+    options: [
+      { text: '明显下降', score: 1 },
+      { text: '略微下降', score: 2 },
+      { text: '保持稳定', score: 4 },
+      { text: '反而提升', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 23,
+    dim: 'adapt',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我视失败为学习机会，能从中快速恢复并改进。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 24,
+    dim: 'adapt',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '要走出舒适区去学习新的陌生领域，你会：',
+    options: [
+      { text: '倾向于留在已知的领域', score: 1 },
+      { text: '如果必要才会去，但内心有抗拒', score: 2 },
+      { text: '会尝试，虽然有些挑战', score: 3 },
+      { text: '主动寻求这样的机会，把挑战看作成长的催化剂', score: 5 }
+    ],
+    isAdvanced: false
+  },
+
+  // ========== DIMENSION 4: CROSS (跨界整合力) - BASIC 8 ==========
+  {
+    id: 25,
+    dim: 'cross',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '你对非本专业领域知识的广度和了解程度是：',
+    options: [
+      { text: '很窄，主要关注自己的领域', score: 1 },
+      { text: '有所涉猎，但不深入', score: 2 },
+      { text: '相当广泛，能跨多个领域讨论', score: 4 },
+      { text: '非常广泛，经常把多个领域的知识连接起来', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 26,
+    dim: 'cross',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我能够看到不同领域概念之间的联系，进行创意的跨界融合。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 27,
+    dim: 'cross',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '对于不属于你专业的领域和新兴趋势，你的好奇心是：',
+    options: [
+      { text: '很低，更关注专业相关的内容', score: 1 },
+      { text: '一般，有时会了解一下', score: 2 },
+      { text: '较强，经常主动学习新领域', score: 4 },
+      { text: '非常强，持续学习跨界知识是我的习惯', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 28,
+    dim: 'cross',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我的跨部门协作经验丰富，能够有效协调不同背景的团队。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 29,
+    dim: 'cross',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当需要整合来自不同学科的信息来解决问题时，你通常：',
+    options: [
+      { text: '依赖专家的意见，自己难以整合', score: 1 },
+      { text: '能逐步整合，但需要时间思考', score: 2 },
+      { text: '能较快地整合多个视角', score: 3 },
+      { text: '快速理解各领域的逻辑，能创造性地整合成新的解决方案', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 30,
+    dim: 'cross',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '你对系统性思维（如何看待系统的整体而非部分）的理解程度是：',
+    options: [
+      { text: '较弱，倾向于看单个问题', score: 1 },
+      { text: '一般，能想到相关联系', score: 2 },
+      { text: '较强，通常会考虑系统的相互影响', score: 4 },
+      { text: '很强，系统性思维是我的核心竞争力', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 31,
+    dim: 'cross',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我能够看到技术发展与商业、社会趋势之间的关联。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 32,
+    dim: 'cross',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '在你的领域，你最大的价值来自于：',
+    options: [
+      { text: '某个单一领域的深度专业知识', score: 1 },
+      { text: '专业知识加上对相关领域的理解', score: 2 },
+      { text: '能够连接多个领域的知识来解决问题', score: 3 },
+      { text: '成为连接技术、商业、人文等多个维度的桥梁，创造跨界价值', score: 5 }
+    ],
+    isAdvanced: false
+  },
+
+  // ========== DIMENSION 5: EMOTION (情绪与决策力) - BASIC 8 ==========
+  {
+    id: 33,
+    dim: 'emotion',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '当信息不完整、需要快速决策时，你的感受是：',
+    options: [
+      { text: '很焦虑，希望能收集更多信息', score: 1 },
+      { text: '有些不适，但能勉强做出决定', score: 2 },
+      { text: '能接受，有一定的决策信心', score: 4 },
+      { text: '能快速整合信息，自信地做出判断', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 34,
+    dim: 'emotion',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我能够识别和管理自己的情绪，不让情绪控制决策。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 35,
+    dim: 'emotion',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '理解他人的情绪、动机和未明说的需求，对你来说：',
+    options: [
+      { text: '比较困难', score: 1 },
+      { text: '有一定难度', score: 2 },
+      { text: '相对容易', score: 4 },
+      { text: '很容易，这是我的核心能力', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 36,
+    dim: 'emotion',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '在团队冲突中，我通常能够保持冷静，找到双赢的解决方案。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 37,
+    dim: 'emotion',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '面对高压情况，你的表现通常是：',
+    options: [
+      { text: '容易崩溃或做出冲动决定', score: 1 },
+      { text: '感到压力很大，决策效率下降', score: 2 },
+      { text: '能保持基本的理性', score: 3 },
+      { text: '压力反而让我更冷静专注，做出更好的决策', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 38,
+    dim: 'emotion',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '当面对道德困境时，你的决策框架通常是基于：',
+    options: [
+      { text: '遵循规则，避免问题', score: 1 },
+      { text: '上级或权威的指示', score: 2 },
+      { text: '自己对对错的理解加上现实考虑', score: 4 },
+      { text: '深思熟虑的价值体系，敢于为原则做出决定', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 39,
+    dim: 'emotion',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我的决策既基于数据和逻辑，也重视直觉和人的因素。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 40,
+    dim: 'emotion',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当需要做出影响他人利益的重大决定时，你会：',
+    options: [
+      { text: '推迟决定，希望能避免争议', score: 1 },
+      { text: '尽量遵循已有的规则或先例', score: 2 },
+      { text: '经过深思，权衡各方利益做出决定', score: 3 },
+      { text: '能够基于清晰的价值观和深层思考做出坚定的决定，并有效沟通', score: 5 }
+    ],
+    isAdvanced: false
+  },
+
+  // ========== DIMENSION 6: GROWTH (成长型思维) - BASIC 8 ==========
+  {
+    id: 41,
+    dim: 'growth',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '你对持续学习新知识和技能的投入程度是：',
+    options: [
+      { text: '很低，主要靠工作经验', score: 1 },
+      { text: '偶尔学习，但不很系统', score: 2 },
+      { text: '经常学习，每月都会抽时间学新东西', score: 4 },
+      { text: '高度重视，持续且系统地投入时间和资源学习', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 42,
+    dim: 'growth',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我能够清晰地认识自己的弱点，并有改进的具体计划。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 43,
+    dim: 'growth',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '你对自己的长期职业发展有明确的目标吗？',
+    options: [
+      { text: '没有，通常看机会', score: 1 },
+      { text: '有一些想法，但不很清晰', score: 2 },
+      { text: '有相对清晰的3-5年目标', score: 4 },
+      { text: '有明确的长期愿景，并制定了实现路线图', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 44,
+    dim: 'growth',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我对来自他人的反馈和批评持开放态度，并将其作为成长的资源。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 45,
+    dim: 'growth',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当遇到自己不擅长的任务时，你通常的反应是：',
+    options: [
+      { text: '避免或让别人做', score: 1 },
+      { text: '勉强完成，但不会深入学习', score: 2 },
+      { text: '完成任务的同时学习改进', score: 3 },
+      { text: '把它看作机会深入学习，甚至会寻求更多挑战来提升这方面能力', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 46,
+    dim: 'growth',
+    type: 'choice',
+    difficulty: 'easy',
+    text: '驱动你不断成长的力量主要来自于：',
+    options: [
+      { text: '外部压力和他人期望', score: 1 },
+      { text: '外部激励和内部驱动混合', score: 2 },
+      { text: '内在的成长欲望为主', score: 4 },
+      { text: '强烈的自我驱动，对成长充满热情', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 47,
+    dim: 'growth',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我会定期反思自己的工作和生活，主动调整方向和方法。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: false
+  },
+  {
+    id: 48,
+    dim: 'growth',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '在规划你的职业和个人发展时，你通常考虑的时间跨度是：',
+    options: [
+      { text: '少于1年，主要关注当前', score: 1 },
+      { text: '1-3年', score: 2 },
+      { text: '3-5年', score: 3 },
+      { text: '5-10年甚至更长，有清晰的人生愿景', score: 5 }
+    ],
+    isAdvanced: false
+  },
+
+  // ========== DIMENSION 1: TECH (技术敏锐度) - ADVANCED 9 ==========
+  {
+    id: 49,
+    dim: 'tech',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '关于不同大语言模型之间的差异（如Claude vs ChatGPT vs Gemini），你的了解程度是：',
+    options: [
+      { text: '没有深入对比过', score: 1 },
+      { text: '知道大概有区别，但细节不清楚', score: 2 },
+      { text: '能够指出主要差异和各自优势', score: 4 },
+      { text: '深入理解它们的架构、训练方法和应用场景的不同', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 50,
+    dim: 'tech',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够设计复杂的多步提示词（Chain-of-Thought, Few-Shot等）来优化AI输出。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 51,
+    dim: 'tech',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '关于AI Agent（自主代理）和Workflow（工作流程）的概念，你的理解是：',
+    options: [
+      { text: '没有听过或很陌生', score: 1 },
+      { text: '有所听闻但不清楚如何应用', score: 2 },
+      { text: '知道概念，能够解释其应用场景', score: 4 },
+      { text: '深入理解，能设计和实现自己的AI Agent或Workflow系统', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 52,
+    dim: 'tech',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我有实际使用AI API进行开发或集成的经验。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 53,
+    dim: 'tech',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当评估一个AI新工具或服务是否值得采用时，你会：',
+    options: [
+      { text: '主要看市场评价和使用人数', score: 1 },
+      { text: '自己试用一下，看看基本功能', score: 2 },
+      { text: '进行深入的测试和对比分析', score: 3 },
+      { text: '系统地评估性能、成本、隐私、与现有系统集成等多个维度', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 54,
+    dim: 'tech',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '关于Multimodal AI（文本、图像、音频等多种输入），你的实践经验是：',
+    options: [
+      { text: '没有使用过', score: 1 },
+      { text: '知道存在，但没深入用过', score: 2 },
+      { text: '有过几次使用经验', score: 4 },
+      { text: '频繁使用，能充分利用其能力', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 55,
+    dim: 'tech',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够评估AI模型的偏见、幻觉等风险，并制定相应的缓解策略。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 56,
+    dim: 'tech',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '如果要在你的组织中推广和规范AI工具使用，你会：',
+    options: [
+      { text: '认为这太复杂，让IT部门处理', score: 1 },
+      { text: '提一些建议，但不会深入参与', score: 2 },
+      { text: '积极参与，制定使用指南和最佳实践', score: 3 },
+      { text: '主导整个过程，建立综合的AI治理框架，包括风险、伦理、投资回报等', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 57,
+    dim: 'tech',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '关于微调（Fine-tuning）或定制化模型训练，你的了解程度是：',
+    options: [
+      { text: '完全不了解这个概念', score: 1 },
+      { text: '知道这是一种提高AI工具的方法，但不清楚具体如何操作', score: 2 },
+      { text: '理解基本原理，能够评估何时值得进行', score: 4 },
+      { text: '能够指导或自己执行微调过程，理解其成本和收益', score: 5 }
+    ],
+    isAdvanced: true
+  },
+
+  // ========== DIMENSION 2: IRREPLACE (不可替代性) - ADVANCED 9 ==========
+  {
+    id: 58,
+    dim: 'irreplace',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '在你的核心工作中，有多少比例涉及创意突破或完全新颖的问题解决？',
+    options: [
+      { text: '很少，大多数是已知模式的应用', score: 1 },
+      { text: '大约20-30%', score: 2 },
+      { text: '大约50%', score: 4 },
+      { text: '绝大部分都需要创意突破', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 59,
+    dim: 'irreplace',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够创造性地结合不同领域的知识，提出前人未想到的解决方案。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 60,
+    dim: 'irreplace',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '在处理客户或利益相关者时，你最大的价值来自于：',
+    options: [
+      { text: '提供标准化的产品或服务', score: 1 },
+      { text: '按照流程提供咨询或支持', score: 2 },
+      { text: '理解他们的深层需求，提供定制化方案', score: 4 },
+      { text: '建立深层信任，成为他们的战略顾问和长期合作伙伴', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 61,
+    dim: 'irreplace',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '在面对前所未有的问题时，我的创新判断力和决策能力是我最大的竞争优势。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 62,
+    dim: 'irreplace',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当你的工作部分被自动化后，你会：',
+    options: [
+      { text: '感到威胁，职业前景不明朗', score: 1 },
+      { text: '接受现实，但不确定如何重新定位自己的价值', score: 2 },
+      { text: '利用节省出来的时间转向更高价值的创意工作', score: 3 },
+      { text: '早已预见这一步，提前布局了不可替代的专长和深度的客户关系', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 63,
+    dim: 'irreplace',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你在组织中扮演的最重要角色是：',
+    options: [
+      { text: '执行具体任务', score: 1 },
+      { text: '管理流程和团队', score: 2 },
+      { text: '解决复杂问题和推动创新', score: 4 },
+      { text: '塑造战略方向和文化，建立难以复制的竞争优势', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 64,
+    dim: 'irreplace',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我的人脉、信誉和人格特质在我的职业成功中占据核心地位。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 65,
+    dim: 'irreplace',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '在你的职业生涯中，你被竞争对手难以复制的核心资产是什么？',
+    options: [
+      { text: '我有的任何能力别人都可能学到', score: 1 },
+      { text: '我的专业认证和工作经验', score: 2 },
+      { text: '我的知识、经验和专业网络', score: 3 },
+      { text: '独特的思维方式、深厚的人脉、过往的成功记录和信誉', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 66,
+    dim: 'irreplace',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你处理高度复杂、多方利益冲突情况的能力在组织中是：',
+    options: [
+      { text: '很普遍，很多人可以做到', score: 1 },
+      { text: '相对稀缺但不罕见', score: 2 },
+      { text: '相当稀缺，很少有人能做得像你一样好', score: 4 },
+      { text: '稀缺且高价值，你被公认为是这方面的专家', score: 5 }
+    ],
+    isAdvanced: true
+  },
+
+  // ========== DIMENSION 3: ADAPT (适应变革力) - ADVANCED 9 ==========
+  {
+    id: 67,
+    dim: 'adapt',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '当你意识到自己需要全面改变职业方向或技能树时，你的行动速度是：',
+    options: [
+      { text: '很慢，往往拖延', score: 1 },
+      { text: '中等，需要一段时间准备', score: 2 },
+      { text: '较快，几个月内开始行动', score: 4 },
+      { text: '很快，立即制定计划并投入学习', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 68,
+    dim: 'adapt',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够在快速变化的环境中保持战略清晰，不被短期噪音干扰。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 69,
+    dim: 'adapt',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你对职业转型的风险和机遇的认知程度是：',
+    options: [
+      { text: '很害怕风险，倾向于保持现状', score: 1 },
+      { text: '意识到机遇，但仍有顾虑', score: 2 },
+      { text: '看到机遇和风险，做好了权衡', score: 4 },
+      { text: '深刻理解，已制定了多个潜在的职业转向计划', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 70,
+    dim: 'adapt',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我会定期评估市场变化，提前调整自己的技能和职业方向。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 71,
+    dim: 'adapt',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '如果你的整个行业都面临被颠覆的风险，你会在多久内做出重大改变？',
+    options: [
+      { text: '等到被迫改变为止', score: 1 },
+      { text: '在明显危机出现后1-2年内', score: 2 },
+      { text: '在危机明显前的1-2年开始行动', score: 3 },
+      { text: '时刻关注前沿动向，很可能比行业平均水平早3-5年感知变化并行动', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 72,
+    dim: 'adapt',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你对自己在不确定环境中的适应能力的评价是：',
+    options: [
+      { text: '较弱，更喜欢稳定的环境', score: 1 },
+      { text: '一般，能适应但会感到压力', score: 2 },
+      { text: '较强，能在变化中发挥好', score: 4 },
+      { text: '很强，变化反而激发我的最佳表现', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 73,
+    dim: 'adapt',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我将持续学习和适应变化视为职业生涯的基本必修课，而不是可选项。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 74,
+    dim: 'adapt',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '在面对重大职业挫折或失败时，你的复原力表现是：',
+    options: [
+      { text: '需要很长时间才能恢复信心', score: 1 },
+      { text: '能够恢复，但会有一段低潮期', score: 2 },
+      { text: '能较快恢复，并从中学习', score: 3 },
+      { text: '快速恢复，甚至能在失败中看到新的机遇', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 75,
+    dim: 'adapt',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '当需要在陌生领域快速上手时，你的学习策略通常是：',
+    options: [
+      { text: '依赖他人的教导', score: 1 },
+      { text: '看书或在线教程', score: 2 },
+      { text: '快速学习理论，然后边做边学', score: 4 },
+      { text: '深入理解原理，同时立即实践，形成自己的框架', score: 5 }
+    ],
+    isAdvanced: true
+  },
+
+  // ========== DIMENSION 4: CROSS (跨界整合力) - ADVANCED 9 ==========
+  {
+    id: 76,
+    dim: 'cross',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你的知识广度跨越了多少个不同的领域？',
+    options: [
+      { text: '1-2个相关领域', score: 1 },
+      { text: '3-5个领域', score: 2 },
+      { text: '6-10个领域', score: 4 },
+      { text: '10个以上，且跨度很大（技术、商业、人文等）', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 77,
+    dim: 'cross',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我的创新想法经常来自于将完全不同领域的概念结合在一起。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 78,
+    dim: 'cross',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '在你的组织中，你充当的角色是：',
+    options: [
+      { text: '单一职能的专家', score: 1 },
+      { text: '某个主要领域的专家加上相邻领域的知识', score: 2 },
+      { text: '多个职能的连接者和协作者', score: 4 },
+      { text: '跨越多个领域的战略连接者，能看到别人看不到的联系', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 79,
+    dim: 'cross',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我能够快速学习新领域的关键概念，并与我已有的知识整合。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 80,
+    dim: 'cross',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当需要整合来自技术、商业、伦理等多个维度的复杂信息做决策时，你会：',
+    options: [
+      { text: '很困难，倾向于找专家做决定', score: 1 },
+      { text: '能逐步整合，但需要时间', score: 2 },
+      { text: '能相对快速地整合，做出平衡的决定', score: 3 },
+      { text: '能快速、深入地整合，看到各个维度的相互作用，做出创意的整体解决方案', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 81,
+    dim: 'cross',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你在跨领域的学习和思维中的主动投入程度是：',
+    options: [
+      { text: '很低，工作需要什么学什么', score: 1 },
+      { text: '一般，有时会探索相邻领域', score: 2 },
+      { text: '较高，经常主动学习非专业领域', score: 4 },
+      { text: '很高，跨领域学习是我的核心习惯和乐趣', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 82,
+    dim: 'cross',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够看到技术变化（如AI）与商业模式、社会趋势的深层关联。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 83,
+    dim: 'cross',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当需要创新业务模式或战略时，你的优势通常来自于：',
+    options: [
+      { text: '不太参与这类工作', score: 1 },
+      { text: '提供某个领域的专业视角', score: 2 },
+      { text: '提供多个领域的见解，帮助整合', score: 3 },
+      { text: '能够看到多个领域的交汇点，提出颠覆性的新想法', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 84,
+    dim: 'cross',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你对"斜杠人生"（多专业、多技能）的看法是：',
+    options: [
+      { text: '不现实，应该专注一个领域', score: 1 },
+      { text: '可以，但深度会有所牺牲', score: 2 },
+      { text: '很好，既有专业深度又有广度', score: 4 },
+      { text: '最优选择，多维度的思维和能力是21世纪最大的竞争优势', score: 5 }
+    ],
+    isAdvanced: true
+  },
+
+  // ========== DIMENSION 5: EMOTION (情绪与决策力) - ADVANCED 9 ==========
+  {
+    id: 85,
+    dim: 'emotion',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你对自己的情绪管理和自我认知的深度程度是：',
+    options: [
+      { text: '很浅，通常不反思自己的情绪', score: 1 },
+      { text: '有一定认知，但不够深入', score: 2 },
+      { text: '相当深入，理解自己的情绪模式', score: 4 },
+      { text: '非常深入，能够觉察情绪根源，做出有意识的选择', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 86,
+    dim: 'emotion',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够在复杂的社交和政治环境中保持真实自我，同时有效影响他人。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 87,
+    dim: 'emotion',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '当面对你强烈反感或不同意的观点时，你通常会：',
+    options: [
+      { text: '立即反驳或避免交互', score: 1 },
+      { text: '努力保持冷静，但心里不舒服', score: 2 },
+      { text: '能够保持开放，尝试理解对方', score: 4 },
+      { text: '能够理解对方的逻辑和情绪根源，即使不同意也能有效对话', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 88,
+    dim: 'emotion',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我的决策框架清晰，基于深思熟虑的价值观，而不是一时的情绪或压力。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 89,
+    dim: 'emotion',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当需要做出可能影响你声誉或利益的伦理决定时，你会：',
+    options: [
+      { text: '优先考虑个人得失', score: 1 },
+      { text: '在个人利益和伦理之间纠结', score: 2 },
+      { text: '以伦理为主，但不完全忽视个人因素', score: 3 },
+      { text: '能够从长期和整体的角度做出坚定的伦理决定', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 90,
+    dim: 'emotion',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你对自己的人际敏感度（能读懂他人的情绪和需求）的评价是：',
+    options: [
+      { text: '较弱，通常不注意他人的情绪', score: 1 },
+      { text: '一般，大多数时候能察觉', score: 2 },
+      { text: '较强，能够准确读懂大多数人', score: 4 },
+      { text: '很强，对人的观察和理解是我的核心竞争力', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 91,
+    dim: 'emotion',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够在团队中创造安全和信任的氛围，使人们愿意分享真实想法。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 92,
+    dim: 'emotion',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '在重大决策中，数据和直觉的比重大约是：',
+    options: [
+      { text: '70%数据，30%直觉', score: 1 },
+      { text: '60%数据，40%直觉', score: 2 },
+      { text: '50%数据，50%直觉', score: 3 },
+      { text: '既相信数据，也相信直觉，甚至能创造性地整合两者', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 93,
+    dim: 'emotion',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你对自己在处理复杂人际和组织问题上的能力评价是：',
+    options: [
+      { text: '较弱，希望有明确的规则和流程', score: 1 },
+      { text: '一般，能处理但有时会出问题', score: 2 },
+      { text: '较强，能够有效导航', score: 4 },
+      { text: '很强，这是我最擅长的地方，能创造性地解决矛盾', score: 5 }
+    ],
+    isAdvanced: true
+  },
+
+  // ========== DIMENSION 6: GROWTH (成长型思维) - ADVANCED 8 ==========
+  {
+    id: 94,
+    dim: 'growth',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你的持续学习是否已经成为一种生活方式？',
+    options: [
+      { text: '不是，只是在需要时学习', score: 1 },
+      { text: '有点，但还不够系统化', score: 2 },
+      { text: '是的，我定期安排学习时间', score: 4 },
+      { text: '完全是，持续学习和自我迭代已经融入我的日常生活', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 95,
+    dim: 'growth',
+    type: 'scale',
+    difficulty: 'hard',
+    text: '我能够快速识别自己的能力缺口，并制定具体可行的补足计划。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 96,
+    dim: 'growth',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '你对自己未来5-10年的发展规划清晰度是：',
+    options: [
+      { text: '很模糊，几乎没有规划', score: 1 },
+      { text: '有大致方向，但细节不清', score: 2 },
+      { text: '相当清晰，有具体的阶段目标', score: 4 },
+      { text: '非常清晰，有明确的愿景和分步计划', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 97,
+    dim: 'growth',
+    type: 'scale',
+    difficulty: 'medium',
+    text: '我会主动寻求具有挑战性的项目和学习机会，即使它们可能让我暂时感到不适。',
+    options: [
+      { text: '完全不同意', score: 1 },
+      { text: '不太同意', score: 2 },
+      { text: '一般', score: 3 },
+      { text: '比较同意', score: 4 },
+      { text: '非常同意', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 98,
+    dim: 'growth',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '当获得来自不同来源的相互矛盾的反馈时，你会：',
+    options: [
+      { text: '倾向于听自己想听的', score: 1 },
+      { text: '有些困惑，需要时间消化', score: 2 },
+      { text: '深入分析，理解不同观点的来源', score: 3 },
+      { text: '快速整合不同视角，提取有价值的信息，调整自己的方向', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 99,
+    dim: 'growth',
+    type: 'choice',
+    difficulty: 'medium',
+    text: '在投资自己的成长上，你每年的时间和资源投入比例大约是：',
+    options: [
+      { text: '很少，少于5%', score: 1 },
+      { text: '一般，5-10%', score: 2 },
+      { text: '较多，10-20%', score: 4 },
+      { text: '很多，20%以上，这是我最重要的投资', score: 5 }
+    ],
+    isAdvanced: true
+  },
+  {
+    id: 100,
+    dim: 'growth',
+    type: 'scenario',
+    difficulty: 'hard',
+    text: '回顾你的职业生涯，你的成长轨迹是：',
+    options: [
+      { text: '相对平稳，没有大的跨越', score: 1 },
+      { text: '有些起伏，偶有突破', score: 2 },
+      { text: '不断上升，持续进步', score: 3 },
+      { text: '呈指数增长，每个阶段都是之前的多倍数', score: 5 }
+    ],
+    isAdvanced: true
+  }
+];
+
+// ============================================================================
+// 3. PAGE ROUTING SYSTEM
+// ============================================================================
+
+function showPage(pageId) {
+  // Hide all pages
+  document.querySelectorAll('.page').forEach(page => {
+    page.classList.remove('active');
+  });
+
+  // Show target page
+  const targetPage = document.getElementById(`page-${pageId}`);
+  if (targetPage) {
+    targetPage.classList.add('active');
+    targetPage.scrollTop = 0;
+  }
+
+  // Update hash
+  window.location.hash = pageId !== 'landing' ? pageId : '';
+
+  // Page-specific initialization
+  if (pageId === 'admin') {
+    renderAdminDashboard();
+  } else if (pageId === 'analyzing') {
+    startAnalyzing();
+  } else if (pageId === 'report') {
+    setTimeout(() => {
+      renderReport(App.results);
+    }, 100);
+  }
+
+  App.currentPage = pageId;
+}
+
+// Hash change listener
+window.addEventListener('hashchange', () => {
+  const hash = window.location.hash.slice(1);
+  if (hash) {
+    if (hash === 'admin') {
+      showPage('admin');
+    } else {
+      showPage(hash);
+    }
+  }
+});
+
+// ============================================================================
+// 4. QUIZ INTERACTION LOGIC
+// ============================================================================
+
+function startQuiz(version) {
+  App.selectedVersion = version;
+  App.questions = allQuestions.filter(q => version === 'advanced' || !q.isAdvanced);
+
+  // Shuffle questions while maintaining dimension distribution
+  const groupedByDim = {};
+  const dims = Object.keys(DIMENSIONS);
+  dims.forEach(dim => {
+    groupedByDim[dim] = App.questions.filter(q => q.dim === dim);
+  });
+
+  // Shuffle within each dimension group
+  Object.keys(groupedByDim).forEach(dim => {
+    groupedByDim[dim] = groupedByDim[dim].sort(() => Math.random() - 0.5);
+  });
+
+  // Cycle through dimensions
+  App.questions = [];
+  const maxQuestionsPerDim = Math.max(...dims.map(d => groupedByDim[d].length));
+  for (let i = 0; i < maxQuestionsPerDim; i++) {
+    dims.forEach(dim => {
+      if (groupedByDim[dim][i]) {
+        App.questions.push(groupedByDim[dim][i]);
+      }
+    });
+  }
+
+  App.currentQuestionIndex = 0;
+  App.answers = {};
+  renderQuestion();
+  showPage('quiz');
+}
+
+function renderQuestion() {
+  if (App.currentQuestionIndex >= App.questions.length) {
+    showPage('analyzing');
+    return;
+  }
+
+  const q = App.questions[App.currentQuestionIndex];
+  const progress = ((App.currentQuestionIndex + 1) / App.questions.length) * 100;
+
+  // Update progress bar
+  const progressBar = document.querySelector('.progress-bar');
+  if (progressBar) {
+    progressBar.style.width = progress + '%';
+  }
+
+  // Update counter
+  const counter = document.querySelector('.question-counter');
+  if (counter) {
+    counter.textContent = `${App.currentQuestionIndex + 1} / ${App.questions.length}`;
+  }
+
+  // Update dimension label
+  const dimLabel = document.querySelector('.question-dimension');
+  if (dimLabel) {
+    dimLabel.textContent = DIMENSIONS[q.dim];
+  }
+
+  // Update question text
+  const questionText = document.querySelector('.question-text');
+  if (questionText) {
+    questionText.textContent = q.text;
+  }
+
+  // Render options
+  const optionsContainer = document.querySelector('.question-options');
+  if (optionsContainer) {
+    optionsContainer.innerHTML = '';
+    const selectedIdx = App.answers[q.id] ? App.answers[q.id].optionIndex : -1;
+
+    if (q.type === 'scale') {
+      // Wrapper with endpoint labels
+      const wrapper = document.createElement('div');
+      wrapper.className = 'scale-wrapper';
+
+      // Scale buttons row
+      const scaleContainer = document.createElement('div');
+      scaleContainer.className = 'scale-options';
+      q.options.forEach((opt, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'scale-btn' + (selectedIdx === idx ? ' selected' : '');
+        btn.textContent = idx + 1;
+        btn.onclick = () => selectAnswer(q.id, idx, opt.score);
+        scaleContainer.appendChild(btn);
+      });
+      wrapper.appendChild(scaleContainer);
+
+      // Endpoint labels
+      const labels = document.createElement('div');
+      labels.className = 'scale-labels';
+      labels.innerHTML = `
+        <span class="scale-label">完全不符合</span>
+        <span class="scale-label">完全符合</span>
+      `;
+      wrapper.appendChild(labels);
+
+      optionsContainer.appendChild(wrapper);
+
+    } else {
+      // Choice & scenario: card layout with checkbox indicators
+      q.options.forEach((opt, idx) => {
+        const card = document.createElement('div');
+        card.className = 'option-card' + (selectedIdx === idx ? ' selected' : '');
+        card.innerHTML = `
+          <div class="option-checkbox">
+            <div class="option-check-inner"></div>
+          </div>
+          <div class="option-text-wrapper">
+            <div class="option-title">${opt.text}</div>
+          </div>
+        `;
+        card.onclick = () => selectAnswer(q.id, idx, opt.score);
+        optionsContainer.appendChild(card);
+      });
+    }
+  }
+
+  // Update button states
+  const prevBtn = document.querySelector('.quiz-prev-btn');
+  const nextBtn = document.querySelector('.quiz-next-btn');
+
+  if (prevBtn) {
+    prevBtn.disabled = App.currentQuestionIndex === 0;
+  }
+
+  if (nextBtn) {
+    if (App.currentQuestionIndex === App.questions.length - 1) {
+      nextBtn.textContent = '完成';
+    } else {
+      nextBtn.textContent = '下一题';
+    }
+  }
+}
+
+function selectAnswer(questionId, optionIndex, score) {
+  App.answers[questionId] = {
+    optionIndex,
+    score,
+    dim: App.questions.find(q => q.id === questionId).dim
+  };
+
+  // Visual feedback - re-render to update selection states
+  const optionsContainer = document.querySelector('.question-options');
+  if (optionsContainer) {
+    const allCards = optionsContainer.querySelectorAll('.option-card');
+    allCards.forEach((card, idx) => {
+      card.classList.toggle('selected', idx === optionIndex);
+    });
+    const allBtns = optionsContainer.querySelectorAll('.scale-btn');
+    allBtns.forEach((btn, idx) => {
+      btn.classList.toggle('selected', idx === optionIndex);
+    });
+  }
+
+  // Auto-advance after delay
+  setTimeout(() => {
+    nextQuestion();
+  }, 500);
+}
+
+function nextQuestion() {
+  if (App.currentQuestionIndex < App.questions.length - 1) {
+    App.currentQuestionIndex++;
+    renderQuestion();
+    window.scrollTo(0, 0);
+  } else {
+    showPage('analyzing');
+  }
+}
+
+function prevQuestion() {
+  if (App.currentQuestionIndex > 0) {
+    App.currentQuestionIndex--;
+    renderQuestion();
+    window.scrollTo(0, 0);
+  }
+}
+
+// ============================================================================
+// 5. SCORING ALGORITHM
+// ============================================================================
+
+function calculateResults() {
+  const dims = Object.keys(DIMENSIONS);
+  const results = {};
+
+  dims.forEach(dim => {
+    const dimAnswers = Object.values(App.answers).filter(a => a.dim === dim);
+    const totalScore = dimAnswers.reduce((sum, a) => sum + a.score, 0);
+    const maxPossible = dimAnswers.length * 5;
+    const percentScore = maxPossible > 0 ? Math.round((totalScore / maxPossible) * 100) : 0;
+
+    results[dim] = {
+      name: DIMENSIONS[dim],
+      raw: totalScore,
+      max: maxPossible,
+      score: percentScore
+    };
+  });
+
+  // Overall score
+  const overall = Math.round(
+    dims.reduce((sum, d) => sum + results[d].score, 0) / dims.length
+  );
+
+  // Grade
+  let grade;
+  if (overall >= 90) grade = 'S';
+  else if (overall >= 75) grade = 'A';
+  else if (overall >= 60) grade = 'B';
+  else if (overall >= 40) grade = 'C';
+  else grade = 'D';
+
+  // Risk
+  const risk = 100 - overall;
+
+  return { dimensions: results, overall, grade, risk };
+}
+
+// ============================================================================
+// 6. ANALYZING ANIMATION
+// ============================================================================
+
+function startAnalyzing() {
+  let progress = 0;
+  const steps = [
+    { at: 15, text: '正在同步神经网络...', status: 'complete' },
+    { at: 40, text: '正在分析认知模型...', status: 'complete' },
+    { at: 70, text: '正在生成个人报告...', status: 'complete' },
+    { at: 95, text: '正在完成最终执行摘要...', status: 'complete' }
+  ];
+
+  const progressBar = document.querySelector('.analyzing-progress');
+  const progressText = document.querySelector('.analyzing-text');
+  const stepsList = document.querySelector('.analyzing-steps');
+
+  const interval = setInterval(() => {
+    progress += Math.random() * 15;
+    if (progress > 100) progress = 100;
+
+    if (progressBar) {
+      progressBar.style.width = progress + '%';
+    }
+
+    steps.forEach((step, idx) => {
+      if (progress >= step.at) {
+        const stepEl = stepsList?.children[idx];
+        if (stepEl) {
+          stepEl.classList.add('complete');
+        }
+      }
+    });
+
+    if (progress >= 100) {
+      clearInterval(interval);
+      App.results = calculateResults();
+
+      // Save results to server
+      saveResults(App.results);
+
+      setTimeout(() => {
+        showPage('report');
+      }, 500);
+    }
+  }, 300);
+}
+
+// ============================================================================
+// 7. REPORT GENERATION & INTERPRETATIONS
+// ============================================================================
+
+const INTERPRETATIONS = {
+  tech: {
+    high: '你展现出了对新兴技术的敏锐洞察和积极拥抱。不仅理解AI等新技术的基本原理，更重要的是能够在实际工作中创造性地应用这些工具来解决问题。建议你进一步深化在前沿领域的专业知识，考虑成为团队中的技术引领者。',
+    medium: '你对技术有基本的认知和使用经验，但在深度理解或主动创新应用上还有提升空间。建议制定明确的技术学习计划，特别是围绕AI在你所在领域的应用，通过实践项目来加深理解和提升能力。',
+    low: '技术敏锐度是你职业发展中的最大风险。在AI快速变革的时代，缺乏技术理解和应用能力会直接威胁你的竞争力。强烈建议立即开始系统学习，从基础概念到实际应用，这是当下最紧急的任务。'
+  },
+  irreplace: {
+    high: '你已经成功地建立了不容易被自动化替代的核心价值。你的创造力、人际能力和独特的判断力使你在组织中处于不可或缺的地位。继续深化这些优势，特别是在战略思维和人才发展方面，进一步提升你的影响力。',
+    medium: '你具备一定的不可替代性，但仍需要更清晰地定位自己的核心价值。考虑在创意思维、关系建立或独特经验方面进行投资，使你更难被复制。同时要警惕自己的工作可能面临自动化的领域。',
+    low: '这是一个危险的信号——你的工作内容可能主要是可重复、规则化的任务，这些工作最容易被AI或自动化工具替代。立即需要重新审视你的职业方向，发现并发展你的独特价值——可能在创意、人际关系或战略思维方面。'
+  },
+  adapt: {
+    high: '你展现出了强大的适应变革的能力。你能够快速学习，拥抱不确定性，从失败中恢复，并主动预见和适应行业变化。这使你在快速变化的时代中处于有利地位。持续磨练这种能力，并考虑在组织中担当变革领导者的角色。',
+    medium: '你有适应变化的基本能力，但缺乏主动性和速度。虽然最终能够适应，但等到危机明显才行动会让你处于被动地位。建议更主动地关注行业趋势，提前一步做出准备，并建立终身学习的心态。',
+    low: '适应能力薄弱是你在AI时代面临的严重风险。变化不会停止，而你的适应速度跟不上。这需要根本性的心态转变——从抵触变化到拥抱变化。强烈建议寻求支持，建立新的学习和适应习惯，否则你将被快速变化的时代所抛弃。'
+  },
+  cross: {
+    high: '你的跨界整合能力是你最独特的竞争力。能够在多个领域之间看到联系，融合不同领域的知识，提出创新的综合解决方案。这种能力在AI时代特别珍贵。继续拓宽知识广度，成为连接不同世界的战略顾问。',
+    medium: '你具有一定的跨界思维，但还不够深入或系统。建议更有意识地学习非专业领域，参与跨部门的项目，逐步建立跨领域的知识网络。这将显著提升你的创新能力和解决复杂问题的能力。',
+    low: '你的思维相对单一，专注于特定领域。在强调融合和跨界的时代，这限制了你的创新潜力和适应力。建议扩大知识广度，特别是学习与你的核心领域相邻的知识，以及理解技术、商业和社会的相互联系。'
+  },
+  emotion: {
+    high: '你具有高度的情商和决策智慧。能够理解和管理自己的情绪，理解他人的需求和动机，在复杂的人际和道德情境中做出成熟的决策。这种能力使你成为可靠的领导者和顾问。继续发展你的自我认知和人际影响力。',
+    medium: '你的情绪管理和人际能力基本可靠，但在高压或复杂的道德情境中可能不够稳健。建议进行更深入的自我反思，提升心理韧性，学习更高级的谈判和冲突解决技能。这些能力对长期职业发展至关重要。',
+    low: '这是你的主要弱点。较低的情商会影响你的决策质量、人际关系和领导潜力，也使你更容易在压力下崩溃。强烈建议投资于自我认知的提升，学习情绪管理和人际沟通的技能，这对你的职业和人生至关重要。'
+  },
+  growth: {
+    high: '你拥有强烈的成长心态和自我提升的动力。不断学习、积极寻求挑战、从反馈中学习——这些特质将推动你的持续进步。你已经建立了良好的自我迭代机制。继续保持这种热情，设定更高的目标和更宏大的愿景。',
+    medium: '你愿意学习和改进，但还不够系统或主动。学习更多是被动应对而非主动驱动。建议建立更明确的长期目标和学习计划，将成长从偶然的努力变成日常的习惯，这会大幅加速你的发展。',
+    low: '这是一个长期的风险因素。如果你缺乏主动学习和自我改进的动力，在快速变化的时代很容易被淘汰。你需要根本性地改变对学习和成长的态度，理解持续改进是职业生存的必需条件，而不仅仅是锦上添花。'
+  }
+};
+
+function renderReport(results) {
+  // Grade display
+  const gradeEl = document.querySelector('.report-grade');
+  if (gradeEl) {
+    gradeEl.textContent = results.grade;
+  }
+
+  // Headline
+  const headlineMap = {
+    'S': '你不仅在适应AI时代，你在定义它。',
+    'A': '您在构建未来，而不仅仅是应对它。',
+    'B': '你拥有坚实的基础，但还需突破关键瓶颈。',
+    'C': '警醒时刻：你的职业护城河正在被侵蚀。',
+    'D': '紧急警告：你正处于被替代的高风险区域。'
+  };
+
+  const headlineEl = document.querySelector('.report-headline');
+  if (headlineEl) {
+    headlineEl.textContent = headlineMap[results.grade];
+  }
+
+  // Overall score display
+  const overallScoreEl = document.querySelector('.overall-score');
+  if (overallScoreEl) {
+    overallScoreEl.textContent = results.overall;
+  }
+
+  // Risk display
+  const riskEl = document.querySelector('.risk-score');
+  if (riskEl) {
+    riskEl.textContent = Math.round(results.risk);
+  }
+
+  // Render charts
+  renderRadarChart(results);
+  renderRiskGauge(results);
+  renderDimensionBars(results);
+
+  // Render interpretations
+  renderInterpretations(results);
+
+  // Render action items
+  renderActionItems(results);
+}
+
+function renderInterpretations(results) {
+  const container = document.querySelector('.interpretations-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const dims = Object.keys(DIMENSIONS);
+
+  dims.forEach(dim => {
+    const score = results.dimensions[dim].score;
+    let level;
+    if (score >= 75) level = 'high';
+    else if (score >= 40) level = 'medium';
+    else level = 'low';
+
+    const text = INTERPRETATIONS[dim][level];
+
+    const section = document.createElement('div');
+    section.className = 'interpretation-section';
+    section.innerHTML = `
+      <h4>${DIMENSIONS[dim]} (${score}分)</h4>
+      <p>${text}</p>
+    `;
+    container.appendChild(section);
+  });
+}
+
+function renderActionItems(results) {
+  const container = document.querySelector('.action-items-container');
+  if (!container) return;
+
+  // Get weakest dimension
+  const dims = Object.keys(DIMENSIONS);
+  const weakest = dims.reduce((min, d) =>
+    results.dimensions[d].score < results.dimensions[min].score ? d : min
+  );
+
+  const actions = {
+    tech: '立即开始系统学习AI基础知识，每周投入5-10小时，先从理论理解开始，然后进行实践应用。',
+    irreplace: '深入思考你工作中不可被替代的部分，重点发展创意、人际和战略能力，制定个人品牌建设计划。',
+    adapt: '建立关注行业趋势的习惯，制定3-5年的职业转向预案，加入学习社群，建立学习和适应的支撑系统。',
+    cross: '每月深入学习一个非专业领域，读书、参加跨界活动、与不同背景的人交流，逐步拓宽知识广度。',
+    emotion: '考虑进行情商教练或心理咨询，建立日常的自我反思和冥想练习，学习高级的人际和决策技能。',
+    growth: '制定明确的5年发展目标，建立每月学习和反思的规律，找一个导师，加入成长社群，激发内在动力。'
+  };
+
+  container.innerHTML = `
+    <h3>当前最优先的行动</h3>
+    <p>${actions[weakest]}</p>
+  `;
+}
+
+// ============================================================================
+// 8. CHART RENDERING
+// ============================================================================
+
+function renderRadarChart(results) {
+  const canvas = document.getElementById('radarChart');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const dims = Object.keys(DIMENSIONS);
+  const scores = dims.map(d => results.dimensions[d].score);
+  const labels = dims.map(d => DIMENSIONS[d]);
+
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: labels,
+      datasets: [{
+        label: 'AI时代适应力评分',
+        data: scores,
+        backgroundColor: 'rgba(91, 213, 252, 0.15)',
+        borderColor: '#5bd5fc',
+        borderWidth: 2,
+        pointBackgroundColor: '#fff',
+        pointBorderColor: '#5bd5fc',
+        pointRadius: 5,
+        pointHoverRadius: 6
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      scales: {
+        r: {
+          min: 0,
+          max: 100,
+          ticks: {
+            display: false
+          },
+          grid: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          angleLines: {
+            color: 'rgba(255, 255, 255, 0.1)'
+          },
+          pointLabels: {
+            color: '#c7c4d8',
+            font: {
+              size: 12,
+              family: "'Noto Sans SC', sans-serif"
+            }
+          }
+        }
+      },
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          backgroundColor: 'rgba(0, 0, 0, 0.8)',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+          borderColor: '#5bd5fc',
+          borderWidth: 1,
+          padding: 10
+        }
+      }
+    }
+  });
+}
+
+function renderRiskGauge(results) {
+  const canvas = document.getElementById('riskGauge');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const risk = Math.round(results.risk);
+
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      datasets: [{
+        data: [risk, 100 - risk],
+        backgroundColor: [
+          risk > 60 ? '#FF6B6B' : risk > 30 ? '#FFD93D' : '#6BCB77',
+          'rgba(255, 255, 255, 0.1)'
+        ],
+        borderColor: 'transparent'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: true,
+      circumference: 180,
+      rotation: 270,
+      plugins: {
+        legend: {
+          display: false
+        },
+        tooltip: {
+          enabled: false
+        }
+      }
+    }
+  });
+}
+
+function renderDimensionBars(results) {
+  const container = document.querySelector('.dimension-bars-container');
+  if (!container) return;
+
+  container.innerHTML = '';
+  const dims = Object.keys(DIMENSIONS);
+  const threshold = 40; // risk threshold percentage position
+
+  dims.forEach(dim => {
+    const score = results.dimensions[dim].score;
+    let statusClass, statusText;
+    if (score >= 75) { statusClass = 'safe'; statusText = '安全'; }
+    else if (score >= 40) { statusClass = 'warning'; statusText = '警告'; }
+    else { statusClass = 'danger'; statusText = '高风险'; }
+
+    const item = document.createElement('div');
+    item.className = 'dim-bar-item';
+    item.innerHTML = `
+      <div class="dim-bar-header">
+        <span class="dim-bar-name">${DIMENSIONS[dim]}</span>
+        <span class="dim-bar-score-num" style="color: ${DIM_COLORS[dim]}">${score}<span class="dim-bar-score-max">/100</span></span>
+      </div>
+      <div class="dim-bar-track">
+        <div class="dim-bar-fill" style="width: ${score}%; background: linear-gradient(90deg, ${DIM_COLORS[dim]}40, ${DIM_COLORS[dim]});"></div>
+        <div class="dim-bar-threshold" style="left: ${threshold}%;"></div>
+      </div>
+      <span class="dim-bar-status ${statusClass}">${statusText}</span>
+    `;
+    container.appendChild(item);
+  });
+}
+
+// ============================================================================
+// 9. REPORT DOWNLOAD
+// ============================================================================
+
+function downloadReport() {
+  const reportEl = document.getElementById('page-report');
+  if (!reportEl) return;
+
+  html2canvas(reportEl, {
+    backgroundColor: '#0b1326',
+    scale: 2,
+    useCORS: true
+  }).then(canvas => {
+    const link = document.createElement('a');
+    link.download = `AI时代破局力评估报告_${new Date().toLocaleDateString('zh-CN')}.png`;
+    link.href = canvas.toDataURL();
+    link.click();
+  });
+}
+
+// ============================================================================
+// 10. CODE VERIFICATION SYSTEM (Server API)
+// ============================================================================
+
+async function submitCode() {
+  const input = document.querySelector('.code-input');
+  if (!input) return;
+
+  const successCard = document.querySelector('.feedback-card.success');
+  const errorCard = document.querySelector('.feedback-card.error');
+  const startBtn = document.querySelector('.quiz-start-btn');
+
+  if (successCard) successCard.style.display = 'none';
+  if (errorCard) errorCard.style.display = 'none';
+  if (startBtn) startBtn.style.display = 'none';
+
+  const code = input.value.trim();
+  if (!code) {
+    if (errorCard) {
+      errorCard.style.display = 'flex';
+      errorCard.querySelector('.feedback-desc').textContent = '请输入兑换码';
+    }
+    return;
+  }
+
+  try {
+    const resp = await fetch('/api/verify-code', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const result = await resp.json();
+
+    if (result.valid) {
+      App.currentCode = result.code;
+      App.selectedVersion = result.type;
+      App.sessionToken = result.sessionToken;
+      App.expiresAt = result.expiresAt;
+      sessionStorage.setItem('na_session', result.sessionToken);
+      sessionStorage.setItem('na_expires', result.expiresAt);
+
+      if (successCard) {
+        successCard.style.display = 'flex';
+        const expiry = new Date(result.expiresAt);
+        const desc = result.resumed
+          ? `会话已恢复，${result.type === 'basic' ? '基础版' : '进阶版'}访问权限有效至 ${expiry.toLocaleString('zh-CN')}`
+          : `${result.type === 'basic' ? '基础版' : '进阶版'}访问权限已激活，有效期24小时（至 ${expiry.toLocaleString('zh-CN')}）`;
+        successCard.querySelector('.feedback-desc').textContent = desc;
+      }
+      if (startBtn) startBtn.style.display = 'block';
+      startExpiryCountdown();
+    } else {
+      if (errorCard) {
+        errorCard.style.display = 'flex';
+        errorCard.querySelector('.feedback-desc').textContent = result.error;
+      }
+    }
+  } catch (e) {
+    if (errorCard) {
+      errorCard.style.display = 'flex';
+      errorCard.querySelector('.feedback-desc').textContent = '网络错误，请重试';
+    }
+  }
+}
+
+// Check session on page load (for refresh / re-entry)
+async function checkSession() {
+  const token = sessionStorage.getItem('na_session');
+  if (!token) return false;
+
+  try {
+    const resp = await fetch('/api/check-session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken: token })
+    });
+    const result = await resp.json();
+
+    if (result.valid) {
+      App.currentCode = result.code;
+      App.selectedVersion = result.type;
+      App.sessionToken = token;
+      App.expiresAt = result.expiresAt;
+      startExpiryCountdown();
+      return true;
+    } else {
+      sessionStorage.removeItem('na_session');
+      sessionStorage.removeItem('na_expires');
+      return false;
+    }
+  } catch (e) {
+    return false;
+  }
+}
+
+// Save results to server
+async function saveResults(results) {
+  const token = App.sessionToken || sessionStorage.getItem('na_session');
+  if (!token) return;
+
+  try {
+    await fetch('/api/save-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionToken: token, results })
+    });
+  } catch (e) {
+    console.warn('Failed to save results:', e);
+  }
+}
+
+// 24-hour expiry countdown
+let expiryTimer = null;
+function startExpiryCountdown() {
+  if (expiryTimer) clearInterval(expiryTimer);
+
+  const countdownEl = document.querySelector('.session-countdown');
+
+  // Show immediately
+  const updateCountdown = () => {
+    const expiresAt = App.expiresAt || sessionStorage.getItem('na_expires');
+    if (!expiresAt) {
+      if (countdownEl) countdownEl.style.display = 'none';
+      return;
+    }
+
+    const remaining = new Date(expiresAt) - new Date();
+    if (remaining <= 0) {
+      clearInterval(expiryTimer);
+      sessionStorage.removeItem('na_session');
+      sessionStorage.removeItem('na_expires');
+      if (countdownEl) countdownEl.style.display = 'none';
+      alert('您的访问权限已到期（24小时），请重新输入兑换码。');
+      App.sessionToken = null;
+      App.expiresAt = null;
+      showPage('landing');
+      return;
+    }
+
+    if (countdownEl) {
+      const h = Math.floor(remaining / 3600000);
+      const m = Math.floor((remaining % 3600000) / 60000);
+      countdownEl.textContent = `剩余 ${h}时${m}分`;
+      countdownEl.style.display = 'block';
+    }
+  };
+
+  updateCountdown();
+  expiryTimer = setInterval(updateCountdown, 30000);
+}
+
+// ============================================================================
+// 11. ADMIN PANEL LOGIC (Server API)
+// ============================================================================
+
+let adminToken = null;
+
+async function handleAdminLogin() {
+  const passwordInput = document.querySelector('.admin-password-input');
+  if (!passwordInput) return;
+
+  try {
+    const resp = await fetch('/api/admin/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: passwordInput.value })
+    });
+    const result = await resp.json();
+
+    if (result.success) {
+      adminToken = result.token;
+      sessionStorage.setItem('na_admin_token', adminToken);
+      document.querySelector('.admin-login-section').style.display = 'none';
+      document.querySelector('.admin-content-section').style.display = 'block';
+      renderAdminDashboard();
+    } else {
+      alert(result.error || '密码错误');
+    }
+  } catch (e) {
+    alert('网络错误，请重试');
+  }
+}
+
+function getAdminToken() {
+  return adminToken || sessionStorage.getItem('na_admin_token');
+}
+
+async function handleGenerateCodes() {
+  const typeSelect = document.querySelector('.code-type-select');
+  const countInput = document.querySelector('.code-count-input');
+  if (!typeSelect || !countInput) return;
+
+  const type = typeSelect.value;
+  const count = parseInt(countInput.value) || 10;
+
+  try {
+    const resp = await fetch('/api/admin/codes/generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Admin-Token': getAdminToken()
+      },
+      body: JSON.stringify({ type, count })
+    });
+    const result = await resp.json();
+
+    if (result.success) {
+      alert(`成功生成 ${result.count} 个兑换码`);
+      countInput.value = '';
+      renderAdminDashboard();
+    } else {
+      alert(result.error || '生成失败');
+    }
+  } catch (e) {
+    alert('网络错误，请重试');
+  }
+}
+
+async function renderAdminDashboard() {
+  const token = getAdminToken();
+  if (!token) return;
+
+  try {
+    // Fetch stats and codes in parallel
+    const [statsResp, codesResp] = await Promise.all([
+      fetch('/api/admin/stats', { headers: { 'X-Admin-Token': token } }),
+      fetch('/api/admin/codes?limit=100', { headers: { 'X-Admin-Token': token } })
+    ]);
+
+    if (statsResp.status === 401 || codesResp.status === 401) {
+      adminToken = null;
+      sessionStorage.removeItem('na_admin_token');
+      document.querySelector('.admin-login-section').style.display = 'block';
+      document.querySelector('.admin-content-section').style.display = 'none';
+      alert('管理员会话已过期，请重新登录');
+      return;
+    }
+
+    const stats = await statsResp.json();
+    const codesData = await codesResp.json();
+
+    // Render stats
+    const statsEl = document.querySelector('.admin-stats');
+    if (statsEl) {
+      statsEl.innerHTML = `
+        <div class="stat-item">
+          <div class="stat-label">总兑换码</div>
+          <div class="stat-value">${stats.total}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">已使用</div>
+          <div class="stat-value">${stats.used}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">未使用</div>
+          <div class="stat-value">${stats.unused}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">使用中</div>
+          <div class="stat-value" style="color:#5bd5fc">${stats.active}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">已过期</div>
+          <div class="stat-value" style="color:#ffb1c6">${stats.expired}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">已完成测评</div>
+          <div class="stat-value" style="color:#bac3ff">${stats.completed}</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-label">使用率</div>
+          <div class="stat-value">${stats.usageRate}%</div>
+        </div>
+      `;
+    }
+
+    // Render code table
+    const tableEl = document.querySelector('.admin-codes-table');
+    if (tableEl) {
+      tableEl.innerHTML = `
+        <thead>
+          <tr>
+            <th>兑换码</th>
+            <th>类型</th>
+            <th>状态</th>
+            <th>激活时间</th>
+            <th>过期时间</th>
+            <th>测评结果</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${codesData.codes.map(c => {
+            let statusText, statusClass;
+            if (!c.used) {
+              statusText = '未使用'; statusClass = 'status-unused';
+            } else if (c.expired) {
+              statusText = '已过期'; statusClass = 'status-expired';
+            } else {
+              statusText = '使用中'; statusClass = 'status-active';
+            }
+            const resultInfo = c.resultGrade
+              ? `<span class="status-result">${c.resultGrade}级 ${c.resultScore}分</span>`
+              : '-';
+            return `
+              <tr>
+                <td class="code-cell">${c.code}</td>
+                <td>${c.type === 'basic' ? '基础版' : '高级版'}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
+                <td>${c.activatedAt ? new Date(c.activatedAt).toLocaleString('zh-CN') : '-'}</td>
+                <td>${c.expiresAt ? new Date(c.expiresAt).toLocaleString('zh-CN') : '-'}</td>
+                <td>${resultInfo}</td>
+                <td>
+                  <button onclick="copyToClipboard('${c.code}')" class="copy-btn">复制</button>
+                </td>
+              </tr>
+            `;
+          }).join('')}
+        </tbody>
+      `;
+    }
+  } catch (e) {
+    console.error('Admin dashboard error:', e);
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('已复制到剪贴板');
+  });
+}
+
+function exportCSV() {
+  const token = getAdminToken();
+  if (!token) { alert('请先登录管理员'); return; }
+  window.open('/api/admin/codes/export?token=' + encodeURIComponent(token), '_blank');
+}
+
+// ============================================================================
+// 12. EVENT LISTENERS BINDING
+// ============================================================================
+
+function bindLandingEvents() {
+  const basicBtn = document.querySelector('.start-basic-btn');
+  const advancedBtn = document.querySelector('.start-advanced-btn');
+
+  if (basicBtn) {
+    basicBtn.addEventListener('click', () => {
+      showPage('select');
+    });
+  }
+
+  if (advancedBtn) {
+    advancedBtn.addEventListener('click', () => {
+      showPage('select');
+    });
+  }
+}
+
+function bindSelectEvents() {
+  const typeButtons = document.querySelectorAll('.quiz-type-btn');
+
+  typeButtons.forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const type = e.currentTarget.dataset.type;
+      App.selectedVersion = type;
+      showPage('code');
+    });
+  });
+}
+
+function bindCodeEvents() {
+  const submitBtn = document.querySelector('.code-submit-btn');
+  const startBtn = document.querySelector('.quiz-start-btn');
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', submitCode);
+  }
+
+  if (startBtn) {
+    startBtn.addEventListener('click', () => {
+      startQuiz(App.selectedVersion || 'basic');
+    });
+  }
+}
+
+function bindQuizEvents() {
+  const prevBtn = document.querySelector('.quiz-prev-btn');
+  const nextBtn = document.querySelector('.quiz-next-btn');
+  const skipBtn = document.querySelector('.quiz-skip-text');
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', prevQuestion);
+  }
+
+  if (nextBtn) {
+    nextBtn.addEventListener('click', nextQuestion);
+  }
+
+  if (skipBtn) {
+    skipBtn.addEventListener('click', nextQuestion);
+  }
+}
+
+function bindReportEvents() {
+  const downloadBtn = document.querySelector('.download-report-btn');
+  const shareBtn = document.querySelector('.share-report-btn');
+  const retakeBtn = document.querySelector('.retake-quiz-btn');
+  const reportShareBtn = document.querySelector('.report-share-btn');
+
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', downloadReport);
+  }
+
+  const shareHandler = () => {
+    if (!App.results) return;
+    const text = `我在AI时代破局力评估中获得${App.results.grade}级（总分${App.results.overall}/100），你也来测一下吧！`;
+    if (navigator.share) {
+      navigator.share({
+        title: 'AI时代破局力评估',
+        text: text,
+        url: window.location.href
+      });
+    } else {
+      navigator.clipboard.writeText(text + '\n' + window.location.href);
+      alert('已复制分享文案到剪贴板');
+    }
+  };
+
+  if (shareBtn) shareBtn.addEventListener('click', shareHandler);
+  if (reportShareBtn) reportShareBtn.addEventListener('click', shareHandler);
+
+  if (retakeBtn) {
+    retakeBtn.addEventListener('click', () => {
+      App.answers = {};
+      App.currentQuestionIndex = 0;
+      App.results = null;
+      showPage('landing');
+    });
+  }
+}
+
+function bindShareEvents() {
+  const shareBtn = document.querySelector('.share-report-btn');
+
+  if (shareBtn) {
+    shareBtn.addEventListener('click', () => {
+      const text = `我在AI时代破局力评估中获得${App.results.grade}级`;
+      const url = window.location.href;
+
+      if (navigator.share) {
+        navigator.share({
+          title: 'AI时代破局力评估',
+          text: text,
+          url: url
+        });
+      }
+    });
+  }
+}
+
+function bindAdminEvents() {
+  const loginBtn = document.querySelector('.admin-login-btn');
+  const generateBtn = document.querySelector('.generate-codes-btn');
+  const exportBtn = document.querySelector('.export-csv-btn');
+
+  if (loginBtn) {
+    loginBtn.addEventListener('click', handleAdminLogin);
+  }
+
+  if (generateBtn) {
+    generateBtn.addEventListener('click', handleGenerateCodes);
+  }
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', exportCSV);
+  }
+}
+
+// ============================================================================
+// 13. INITIALIZATION
+// ============================================================================
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Check hash for admin access
+  if (window.location.hash === '#admin') {
+    showPage('admin');
+  } else {
+    showPage('landing');
+  }
+
+  // Bind all event listeners
+  bindLandingEvents();
+  bindSelectEvents();
+  bindCodeEvents();
+  bindQuizEvents();
+  bindReportEvents();
+  bindShareEvents();
+  bindAdminEvents();
+
+  // Bind back buttons with contextual navigation
+  const backNav = {
+    'page-select': 'landing',
+    'page-code': 'select',
+    'page-quiz': 'select',
+    'page-report': 'landing',
+    'page-share': 'report',
+    'page-admin': 'landing',
+  };
+  document.querySelectorAll('.back-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const pageEl = btn.closest('.page');
+      const target = pageEl ? (backNav[pageEl.id] || 'landing') : 'landing';
+      showPage(target);
+    });
+  });
+
+  // Check for existing session on load
+  checkSession().then(valid => {
+    if (valid) {
+      console.log('Session restored for code:', App.currentCode);
+    }
+  });
+
+  // Check for admin token
+  const savedAdminToken = sessionStorage.getItem('na_admin_token');
+  if (savedAdminToken && window.location.hash === '#admin') {
+    adminToken = savedAdminToken;
+  }
+});
+
+    </script>
+
+</body>
+</html>
