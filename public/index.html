@@ -2327,10 +2327,6 @@
         }
 
         .admin-dashboard {
-            display: none;
-        }
-
-        .admin-dashboard.active {
             display: flex;
             flex-direction: column;
             gap: 24px;
@@ -5563,33 +5559,33 @@ async function renderAdminDashboard() {
     const statsEl = document.querySelector('.admin-stats');
     if (statsEl) {
       statsEl.innerHTML = `
-        <div class="stat-item">
-          <div class="stat-label">总兑换码</div>
-          <div class="stat-value">${stats.total}</div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-value">${stats.total}</div>
+          <div class="admin-stat-label">总兑换码</div>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">已使用</div>
-          <div class="stat-value">${stats.used}</div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-value">${stats.used}</div>
+          <div class="admin-stat-label">已使用</div>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">未使用</div>
-          <div class="stat-value">${stats.unused}</div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-value">${stats.unused}</div>
+          <div class="admin-stat-label">未使用</div>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">使用中</div>
-          <div class="stat-value" style="color:#5bd5fc">${stats.active}</div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-value" style="color:#5bfca0">${stats.active}</div>
+          <div class="admin-stat-label">使用中</div>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">已过期</div>
-          <div class="stat-value" style="color:#ffb1c6">${stats.expired}</div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-value" style="color:#ffb1c6">${stats.expired}</div>
+          <div class="admin-stat-label">已过期</div>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">已完成测评</div>
-          <div class="stat-value" style="color:#bac3ff">${stats.completed}</div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-value" style="color:#bac3ff">${stats.completed}</div>
+          <div class="admin-stat-label">已完成测评</div>
         </div>
-        <div class="stat-item">
-          <div class="stat-label">使用率</div>
-          <div class="stat-value">${stats.usageRate}%</div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-value">${stats.usageRate}%</div>
+          <div class="admin-stat-label">使用率</div>
         </div>
       `;
     }
